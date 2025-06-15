@@ -31,7 +31,7 @@ function App() {
         </p>
         <p> ¡Haz de cada práctica un paso hacia tu fluidez! </p>
 
-        <div><img src="" alt="érfilesde estudiantes" /></div>
+        <div><img src="/img/inicio-minifoto.png" alt="perfilesde estudiantes" /></div>
 
         <a href="#"><button> ¡Comienza Ahora! </button></a>
 
@@ -42,32 +42,56 @@ function App() {
 
       <div className='seccionDos'>
         <h2>BENEFICIOS DE APRENDER CON NOSOTROS </h2>
-        <hr />
-        <p>En nuestra institución, nos especializamos en la 
-          enseñanza del inglés para niños, jóvenes y adultos, 
-          con un enfoque completamente personalizado. Gracias 
-          a metodologías dinámicas y recursos adaptados, nuestros 
-          estudiantes desarrollan con confianza las habilidades 
-          que necesitan para comunicarse en inglés con fluidez y seguridad.
+      
+        <p>Nos especializamos en la enseñanza del inglés para niños, jóvenes y adultos.
+         Con un enfoque práctico, moderno y personalizado, te guiamos con confianza en cada etapa,
+         asegurando un aprendizaje efectivo. ¡Descubre todo lo que incluye tu experiencia!
         </p>
-        <div className='imgSeccionDos'> <img src="/img/seccionDos.png" alt="" /></div>
-        <Beneficios
-        
-        tituloBeneficio = "Metodología moderna"
-        descripcionBeneficio = "PPP, Flipped Learning y método Audiolingual para aprender de forma natural y efectiva."
-        />
 
-        <Beneficios
-        
-        tituloBeneficio = "Enfoque personalizado"
-        descripcionBeneficio = "Clases adaptadas a tu ritmo, necesidades y estilo de aprendizaje."
-        />
+        <div className='BeneficiosInf'> 
+         <Beneficios
+         imgBeneficio = "1"
+         tituloBeneficio = "Metodología Moderna"
+         descripcionBeneficio = "Aprende con técnicas como Flipped Learning y el método Audiolingual, para dominar el idioma de forma natural."
+         />
 
+         <Beneficios
+         imgBeneficio = "2"
+         tituloBeneficio = "Aprendizaje Adaptado"
+         descripcionBeneficio = "Contenidos y metodología enfocados en tus metas y necesidades, para un progreso eficaz."
+         />
+
+         <Beneficios
+         imgBeneficio = "3"
+         tituloBeneficio = "Desarrollo Integral"
+         descripcionBeneficio = "Fortalecemos tu Speaking, Listening, Writing y Reading desde el primer día."
+         />
+
+         <Beneficios
+         imgBeneficio = "4"
+         tituloBeneficio = "Recursos Interactivos"
+         descripcionBeneficio = "Herramientas digitales que impulsan el aprendizaje práctico y activo."
+         />
+
+         <Beneficios
+         imgBeneficio = "5"
+         tituloBeneficio = "Ambiente Dinámico"
+         descripcionBeneficio = "Participación constante y clases diseñadas para mantenerte motivado."
+         />
+
+         <Beneficios
+         imgBeneficio = "6"
+         tituloBeneficio = "Certificación de Nivel"
+         descripcionBeneficio = "Valida tu dominio del inglés y mejora tu perfil académico y profesional."
+         />
+
+
+       </div>
       </div>
       
       <div className="contenedorCursosInf">
-        <h2>cursos</h2>
-        <hr />
+        <h2>Explora nuestros niveles y encuentra tu curso ideal</h2>
+        
         <p>Explora los niveles del idioma según el Marco Común Europeo de Referencia (MCER)
            y encuentra el punto ideal para empezar a avanzar con confianza y claridad.</p>
         <CursosInf 
@@ -78,7 +102,7 @@ function App() {
 
         <CursosInf 
         imgCurso = "Medio"
-        nombreNivelCurso = "Nivel Intermedio (B1 – B2)"
+        nombreNivelCurso = "Nivpersonalizadoel Intermedio (B1 – B2)"
         descripcionNivelCurso = "Curso para fortalecer habilidades comunicativas en inglés. Participa en conversaciones, expresa ideas y comprende textos generales. Ideal para entornos personales, académicos y laborales."
         />
 
