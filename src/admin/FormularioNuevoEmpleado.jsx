@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
-function FormularioNuevoProfesor({ onContinuar }) {
+function FormularioNuevoEmpleado({ onContinuar }) {
   const [datos, setDatos] = useState({
     cedula: '',
     primerNombre: '',
     segundoNombre: '',
     apellido: '',
     segundoApellido: '',
-    direccion: '',
     telefono: '',
+    telefonoCasa: '',
+    telefonoEmergencia: '',
     correo: '',
+    direccion: '',
   });
 
   const handleChange = (e) => {
@@ -23,23 +26,25 @@ function FormularioNuevoProfesor({ onContinuar }) {
       segundoNombre: '',
       apellido: '',
       segundoApellido: '',
-      direccion: '',
       telefono: '',
+      telefonoCasa: '',
+      telefonoEmergencia: '',
       correo: '',
+      direccion: '',
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (datos.cedula.trim() === '') return alert('Por favor ingresa la cédula');
-    onContinuar('registro-usuario', datos.cedula); // ← enviamos la cédula
+    onContinuar('registro-usuario', datos.cedula);
   };
 
   return (
-    <form className="formulario-profesor" onSubmit={handleSubmit}>
-      <h2>Nuevo Profesor</h2>
+    <form className="formulario-empleado" onSubmit={handleSubmit}>
+      <h2>Datos del Empleado</h2>
 
-      <section className="datos-profesor">
+      <section className="datos-empleado">
         <input
           name="cedula"
           placeholder="Cédula de Identidad"
@@ -71,21 +76,33 @@ function FormularioNuevoProfesor({ onContinuar }) {
           onChange={handleChange}
         />
         <input
-          name="direccion"
-          placeholder="Dirección"
-          value={datos.direccion}
-          onChange={handleChange}
-        />
-        <input
           name="telefono"
           placeholder="Teléfono"
           value={datos.telefono}
           onChange={handleChange}
         />
         <input
+          name="telefonoCasa"
+          placeholder="Teléfono de Casa"
+          value={datos.telefonoCasa}
+          onChange={handleChange}
+        />
+        <input
+          name="telefonoEmergencia"
+          placeholder="Teléfono de Emergencia"
+          value={datos.telefonoEmergencia}
+          onChange={handleChange}
+        />
+        <input
           name="correo"
           placeholder="Correo Electrónico"
           value={datos.correo}
+          onChange={handleChange}
+        />
+        <input
+          name="direccion"
+          placeholder="Dirección"
+          value={datos.direccion}
           onChange={handleChange}
         />
       </section>
@@ -98,6 +115,8 @@ function FormularioNuevoProfesor({ onContinuar }) {
   );
 }
 
-export default FormularioNuevoProfesor;
+FormularioNuevoEmpleado.propTypes = {
+  onContinuar: PropTypes.func.isRequired,
+};
 
-
+export default FormularioNuevoEmpleado;

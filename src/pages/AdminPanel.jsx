@@ -4,8 +4,8 @@ import FormularioNuevoEstudiante from '../admin/FormularioNuevoEstudiante';
 import FormularioNuevoProfesor from '../admin/FormularioNuevoProfesor';
 import GestionDeNotas from '../admin/GestionDeNotas';
 import CargaMaterial from '../admin/CargaMaterial';
-
-// import FormularioNuevoEmpleado from '../admin/FormularioNuevoEmpleado';
+import RegistroUsuario from '../admin/RegistroUsuario';
+import FormularioNuevoEmpleado from '../admin/FormularioNuevoEmpleado';
 // import CrearNivel from '../admin/CrearNivel';
 // import CrearCurso from '../admin/CrearCurso';
 // import CrearSucursal from '../admin/CrearSucursal';
@@ -16,48 +16,44 @@ import CargaMaterial from '../admin/CargaMaterial';
 
 const AdminPanel = () => {
   const [vista, setVista] = useState(null);
+  const [cedulaActual, setCedulaActual] = useState('');
+
+  // Función para recibir cédula desde formularios y cambiar de vista
+  const handleContinuar = (nuevaVista, cedula) => {
+    setCedulaActual(cedula);
+    setVista(nuevaVista);
+  };
 
   const renderContenido = () => {
     switch (vista) {
       case 'estudiante':
-        return <FormularioNuevoEstudiante />;
+        return <FormularioNuevoEstudiante onContinuar={handleContinuar} />;
       case 'profesor':
-        return <FormularioNuevoProfesor />;
+        return <FormularioNuevoProfesor onContinuar={handleContinuar} />;
+      case 'registro-usuario':
+        return <RegistroUsuario cedula={cedulaActual} />;
       case 'empleado':
-        // return <FormularioNuevoEmpleado />;
-        return <div>Formulario para Empleado (pendiente)</div>;
-
+        return <FormularioNuevoEmpleado onContinuar={handleContinuar} />;
       case 'cargar-nota':
         return <GestionDeNotas />;
       case 'cargar-material':
         return <CargaMaterial />;
-
       case 'nuevo-nivel':
-        // return <CrearNivel />;
         return <div>Formulario para crear un nuevo nivel (pendiente)</div>;
       case 'nuevo-curso':
-        // return <CrearCurso />;
         return <div>Formulario para crear un nuevo curso (pendiente)</div>;
       case 'nueva-sucursal':
-        // return <CrearSucursal />;
         return <div>Formulario para crear una nueva sucursal (pendiente)</div>;
       case 'nueva-evaluacion':
-        // return <CrearEvaluacion />;
         return <div>Formulario para crear una nueva evaluación (pendiente)</div>;
       case 'nuevo-pago':
-        // return <CrearPago />;
         return <div>Formulario para registrar un nuevo pago (pendiente)</div>;
-
       case 'gestionar-usuarios':
-        // return <GestionUsuarios />;
         return <div>Gestión de Usuarios (pendiente)</div>;
       case 'gestionar-cuotas':
-        // return <GestionCuotas />;
         return <div>Gestión de Cuotas (pendiente)</div>;
-
       case 'consultas':
         return <div>Consultas</div>;
-
       default:
         return <div>Selecciona una opción del panel</div>;
     }
@@ -74,6 +70,7 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
+
 
 
 
