@@ -1,4 +1,3 @@
-// src/components/LoadingScreen.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,8 +27,12 @@ const LoadingScreen = ({ redirectTo }) => {
   }, [index, images.length, navigate, redirectTo]);
 
   return (
-    <div className="loading-container">
-      <img src={images[index]} alt={`Imagen ${index + 1}`} className="loading-logo" />
+    <div className="min-h-screen w-full flex items-center justify-center">
+      <img 
+        src={images[index]} 
+        alt={`Imagen ${index + 1}`} 
+        className="w-50 h-50 object-contain max-w-4xl max-h-4xl" 
+      />
     </div>
   );
 };
