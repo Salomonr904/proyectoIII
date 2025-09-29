@@ -6,19 +6,23 @@ import GestionDeNotas from '../admin/GestionDeNotas';
 import CargaMaterial from '../admin/CargaMaterial';
 import RegistroUsuario from '../admin/RegistroUsuario';
 import FormularioNuevoEmpleado from '../admin/FormularioNuevoEmpleado';
-// import CrearNivel from '../admin/CrearNivel';
+import ConsultaUsuarios from '../admin/ConsultaUsuarios';
+import DetalleUsuario from '../admin/DetalleUsuario';
+import EditarUsuario from '../admin/EditarUsuario';
+import CrearNivel from '../admin/CrearNivel';
 // import CrearCurso from '../admin/CrearCurso';
-// import CrearSucursal from '../admin/CrearSucursal';
-// import CrearEvaluacion from '../admin/CrearEvaluacion';
-// import CrearPago from '../admin/CrearPago';
-// import GestionUsuarios from '../admin/GestionUsuarios';
-// import GestionCuotas from '../admin/GestionCuotas';
+import CrearSucursal from '../admin/CrearSucursal';
+import NuevaEvaluacion from '../admin/NuevaEvaluacion';
+import CrearPago from '../admin/CrearPago';
+import GestionUsuarios from '../admin/GestionUsuarios';
+import GestionCuotas from '../admin/GestionCuotas';
+import RestablecerContrasena from '../admin/RestablecerContrasena';
+import RegistrarCuota from '../admin/RegistrarCuota';
 
 const AdminPanel = () => {
   const [vista, setVista] = useState(null);
   const [cedulaActual, setCedulaActual] = useState('');
 
-  // Función para recibir cédula desde formularios y cambiar de vista
   const handleContinuar = (nuevaVista, cedula) => {
     setCedulaActual(cedula);
     setVista(nuevaVista);
@@ -39,21 +43,53 @@ const AdminPanel = () => {
       case 'cargar-material':
         return <CargaMaterial />;
       case 'nuevo-nivel':
-        return <div>Formulario para crear un nuevo nivel (pendiente)</div>;
+        return <CrearNivel />;
       case 'nuevo-curso':
         return <div>Formulario para crear un nuevo curso (pendiente)</div>;
       case 'nueva-sucursal':
-        return <div>Formulario para crear una nueva sucursal (pendiente)</div>;
+        return <CrearSucursal />;
       case 'nueva-evaluacion':
-        return <div>Formulario para crear una nueva evaluación (pendiente)</div>;
+        return <NuevaEvaluacion />;
       case 'nuevo-pago':
-        return <div>Formulario para registrar un nuevo pago (pendiente)</div>;
+        return <CrearPago />;
       case 'gestionar-usuarios':
-        return <div>Gestión de Usuarios (pendiente)</div>;
+        return (
+          <GestionUsuarios
+            onVerRestablecer={(cedula) => {
+              setCedulaActual(cedula);
+              setVista('restablecer-usuario');
+            }}
+          />
+        );
+      case 'restablecer-usuario':
+        return (
+          <RestablecerContrasena
+            cedula={cedulaActual}
+            onVolver={() => setVista('gestionar-usuarios')}
+          />
+        );
       case 'gestionar-cuotas':
-        return <div>Gestión de Cuotas (pendiente)</div>;
-      case 'consultas':
-        return <div>Consultas</div>;
+        return (
+          <GestionCuotas
+            onRegistrarCuota={() => setVista('registrar-cuota')}
+         />
+        );
+      case 'registrar-cuota':
+        return <RegistrarCuota onVolver={() => setVista('gestionar-cuotas')} />;
+
+      case 'consultar':
+        return (
+          <ConsultaUsuarios
+            onVerUsuario={(cedula) => {
+              setCedulaActual(cedula);
+              setVista('detalle-usuario');
+            }}
+          />
+        );
+      case 'detalle-usuario':
+        return <DetalleUsuario cedula={cedulaActual} onNavigate={setVista} />;
+      case 'editar-usuario':
+        return <EditarUsuario cedula={cedulaActual} />;
       default:
         return <div>Selecciona una opción del panel</div>;
     }
@@ -62,9 +98,7 @@ const AdminPanel = () => {
   return (
     <div className="app-layout">
       <PanelDeControl onNavigate={setVista} />
-      <main className="contenido-principal">
-        {renderContenido()}
-      </main>
+      <main className="contenido-principal">{renderContenido()}</main>
     </div>
   );
 };
