@@ -36,7 +36,7 @@ function PanelDeControl({ onNavigate }) {
         </ul>
       )}
 
-      <button onClick={() => seleccionarOpcion('consultas')}>Consultar</button>
+      <button onClick={() => seleccionarOpcion('consultar')}>Consultar</button>
       <button onClick={() => toggleSubmenu('crear')}>Crear</button>
       {submenuActivo === 'crear' && (
        <ul>
