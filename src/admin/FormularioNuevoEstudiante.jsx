@@ -137,10 +137,10 @@ function FormularioNuevoEstudiante({ onContinuar }) {
                 />
               </div>
               
-              <div>
+              <div className="col-span-1 md:col-span-4">
                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
               <input 
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-950"
                 name="direccion" 
                 placeholder="Dirección" 
               />
@@ -223,8 +223,7 @@ function FormularioNuevoEstudiante({ onContinuar }) {
                     placeholder="Teléfono Celular" 
                   />
                 </div>
-                
-                <div>
+                <div className="col-span-1 md:col-span-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Dirección de Trabajo</label>
                   <input 
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-950"
