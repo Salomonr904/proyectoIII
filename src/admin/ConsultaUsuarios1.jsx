@@ -4,18 +4,28 @@ function ConsultaUsuarios({ onVerUsuario }) {
   const [usuarios, setUsuarios] = useState([]);
   const [tipo, setTipo] = useState('todos');
   const [estado, setEstado] = useState('todos');
+  const [fecha, setFecha] = useState('todos');
+  const [nivel, setNivel] = useState('todos');
+  const [busquedaCedula, setBusquedaCedula] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [usuarioAEliminar, setUsuarioAEliminar] = useState(null); // 🆕
+  const [usuarioAEliminar, setUsuarioAEliminar] = useState(null);
 
   const fetchUsuarios = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`https://tu-backend.com/api/usuarios?tipo=${tipo}&estado=${estado}`);
+      const response = await fetch(
+        `https://tu-backend.com/api/usuarios?tipo=${tipo}&estado=${estado}&fecha=${fecha}&nivel=${nivel}`
+      );
       const data = await response.json();
-      setUsuarios(data);
+
+      const filtrados = data.filter((usuario) =>
+        usuario.cedula.includes(busquedaCedula.trim())
+      );
+
+      setUsuarios(filtrados);
     } catch (err) {
       console.error('Error al obtener usuarios:', err);
       setError('No se pudo cargar la lista de usuarios.');
@@ -26,7 +36,7 @@ function ConsultaUsuarios({ onVerUsuario }) {
 
   useEffect(() => {
     fetchUsuarios();
-  }, [tipo, estado]);
+  }, [tipo, estado, fecha, nivel, busquedaCedula]);
 
   const desactivarUsuario = async (cedula) => {
     try {
@@ -39,7 +49,7 @@ function ConsultaUsuarios({ onVerUsuario }) {
       setUsuarios((prev) =>
         prev.map((u) => (u.cedula === cedula ? { ...u, estado: 'Inactivo' } : u))
       );
-      setUsuarioAEliminar(null); // cerrar modal
+      setUsuarioAEliminar(null);
     } catch (err) {
       console.error('Error al desactivar usuario:', err);
       alert('No se pudo cambiar el estado del usuario.');
@@ -47,22 +57,43 @@ function ConsultaUsuarios({ onVerUsuario }) {
   };
 
   return (
-    <div className="consulta-usuarios" style={{ padding: '1rem' }}>
+    <div className="consulta-usuarios">
       <h2>Consultar Usuarios</h2>
 
-      <div className="filtros" style={{ marginBottom: '1rem' }}>
-        <select value={tipo} onChange={(e) => setTipo(e.target.value)} style={{ marginRight: '1rem' }}>
-          <option value="todos">Todos los tipos</option>
+      <div className="filtros">
+        <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+          <option value="todos">Tipo</option>
           <option value="estudiante">Estudiante</option>
           <option value="profesor">Profesor</option>
           <option value="empleado">Empleado</option>
         </select>
 
         <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-          <option value="todos">Todos los estados</option>
+          <option value="todos">Estado</option>
           <option value="activo">Activo</option>
           <option value="inactivo">Inactivo</option>
         </select>
+
+        <select value={fecha} onChange={(e) => setFecha(e.target.value)}>
+          <option value="todos">Fecha</option>
+          <option value="2025-10-01">01/10/2025</option>
+          <option value="2025-10-10">10/10/2025</option>
+          <option value="2025-09-15">15/09/2025</option>
+        </select>
+
+        <select value={nivel} onChange={(e) => setNivel(e.target.value)}>
+          <option value="todos">Nivel</option>
+          <option value="Básico">Básico</option>
+          <option value="Intermedio">Intermedio</option>
+          <option value="Avanzado">Avanzado</option>
+        </select>
+
+        <input
+          type="text"
+          value={busquedaCedula}
+          onChange={(e) => setBusquedaCedula(e.target.value)}
+          placeholder="Buscar por cédula"
+        />
       </div>
 
       {loading ? (
@@ -70,9 +101,9 @@ function ConsultaUsuarios({ onVerUsuario }) {
       ) : error ? (
         <p style={{ color: 'red' }}>{error}</p>
       ) : usuarios.length === 0 ? (
-        <p>No hay usuarios que coincidan con los filtros.</p>
+        <p>No hay datos</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table>
           <thead>
             <tr>
               <th>C.I</th>
@@ -89,16 +120,12 @@ function ConsultaUsuarios({ onVerUsuario }) {
                 <td>{usuario.cedula}</td>
                 <td>{usuario.nombre}</td>
                 <td>{usuario.telefono}</td>
-                <td>
-                  <span style={{ color: usuario.estado === 'Activo' ? 'green' : 'gray' }}>
-                    {usuario.estado}
-                  </span>
-                </td>
+                <td>{usuario.estado}</td>
                 <td>
                   {usuario.estado === 'Activo' ? (
                     <button onClick={() => setUsuarioAEliminar(usuario)}>🗑️</button>
                   ) : (
-                    <span style={{ opacity: 0.5 }}>—</span>
+                    <span>—</span>
                   )}
                 </td>
                 <td>
@@ -110,31 +137,15 @@ function ConsultaUsuarios({ onVerUsuario }) {
         </table>
       )}
 
-      {/* 🧨 Modal de confirmación */}
       {usuarioAEliminar && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', maxWidth: '400px' }}>
+        <div>
+          <div>
             <p>¿Seguro que desea eliminar al siguiente usuario?</p>
             <p><strong>{usuarioAEliminar.tipo}</strong></p>
             <p>{usuarioAEliminar.nombre}</p>
             <p>C.I: {usuarioAEliminar.cedula}</p>
-
-            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setUsuarioAEliminar(null)}>Cancelar</button>
-              <button onClick={() => desactivarUsuario(usuarioAEliminar.cedula)}>Eliminar</button>
-            </div>
+            <button onClick={() => setUsuarioAEliminar(null)}>Cancelar</button>
+            <button onClick={() => desactivarUsuario(usuarioAEliminar.cedula)}>Eliminar</button>
           </div>
         </div>
       )}
