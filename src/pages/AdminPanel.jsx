@@ -3,6 +3,7 @@ import PanelDeControl from '../admin/PanelDeControl';
 import FormularioNuevoEstudiante from '../admin/FormularioNuevoEstudiante';
 import FormularioNuevoProfesor from '../admin/FormularioNuevoProfesor';
 import GestionDeNotas from '../admin/GestionDeNotas';
+import HistorialAcademico from '../admin/HistorialAcademico';
 import CargaMaterial from '../admin/CargaMaterial';
 import RegistroUsuario from '../admin/RegistroUsuario';
 import FormularioNuevoEmpleado from '../admin/FormularioNuevoEmpleado';
@@ -40,6 +41,8 @@ const AdminPanel = () => {
         return <FormularioNuevoEmpleado onContinuar={handleContinuar} />;
       case 'cargar-nota':
         return <GestionDeNotas />;
+      case 'historial-academico':
+        return <HistorialAcademico onVolver={() => setVista('detalle-usuario')} />;
       case 'cargar-material':
         return <CargaMaterial />;
       case 'nuevo-nivel':
