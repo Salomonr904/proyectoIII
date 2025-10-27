@@ -4,6 +4,7 @@ function CrearPago() {
   const [nombreMetodo, setNombreMetodo] = useState('');
   const [metodos, setMetodos] = useState([]);
   const [metodoAEliminar, setMetodoAEliminar] = useState(null);
+  const [busqueda, setBusqueda] = useState('');
 
   // 🔄 Cargar métodos desde el backend (GET)
   useEffect(() => {
@@ -15,14 +16,14 @@ function CrearPago() {
       .catch((err) => console.error('Error al cargar métodos de pago:', err));
     */
 
-    // 🧪 Simulación temporal
+    // 🧪 Simulación temporal con los datos de la imagen
     const simulados = [
-      { nombre: 'Transferencia Bancaria' },
-      { nombre: 'Tarjeta de Crédito' },
-      { nombre: 'Tarjeta de Débito' },
-      { nombre: 'Efectivo' },
-      { nombre: 'PayPal' },
-      { nombre: 'Criptomonedas' },
+      { id: 1, nombre: 'Efectivo' },
+      { id: 2, nombre: 'Tarjetas de débito o crédito' },
+      { id: 3, nombre: 'Transferencias bancarias' },
+      { id: 4, nombre: 'Pago móvil / billeteras digitales' },
+      { id: 5, nombre: 'Cheques' },
+      { id: 6, nombre: 'Criptomonedas' },
     ];
     setMetodos(simulados);
   }, []);
@@ -33,7 +34,10 @@ function CrearPago() {
       return;
     }
 
-    const nuevo = { nombre: nombreMetodo };
+    const nuevo = { 
+      id: Date.now(), 
+      nombre: nombreMetodo 
+    };
 
     // 🔼 Enviar nuevo método al backend (POST)
     /*
@@ -63,12 +67,12 @@ function CrearPago() {
 
     // 🔽 Eliminar método del backend (DELETE)
     /*
-    fetch(`https://tu-backend.com/api/metodos-pago/${metodoAEliminar.nombre}`, {
+    fetch(`https://tu-backend.com/api/metodos-pago/${metodoAEliminar.id}`, {
       method: 'DELETE',
     })
       .then(() => {
         setMetodos((prev) =>
-          prev.filter((m) => m.nombre !== metodoAEliminar.nombre)
+          prev.filter((m) => m.id !== metodoAEliminar.id)
         );
         setMetodoAEliminar(null);
       })
@@ -80,78 +84,185 @@ function CrearPago() {
 
     // 🧪 Simulación temporal
     setMetodos((prev) =>
-      prev.filter((m) => m.nombre !== metodoAEliminar.nombre)
+      prev.filter((m) => m.id !== metodoAEliminar.id)
     );
     setMetodoAEliminar(null);
   };
 
-  return (
-    <div style={{ padding: '1rem' }}>
-      <h2>Crear Método de Pago</h2>
+  // 🔍 Filtrado de métodos por nombre
+  const metodosFiltrados = metodos.filter(metodo =>
+    metodo.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
-      {/* 📝 Formulario */}
-      <div style={{ marginBottom: '2rem' }}>
-        <label>Método de Pago:</label>
-        <input
-          type="text"
-          value={nombreMetodo}
-          onChange={(e) => setNombreMetodo(e.target.value)}
-          placeholder="Ej. Transferencia Bancaria"
-        />
-        <button onClick={agregarMetodo} style={{ marginTop: '1rem' }}>
-          Agregar
-        </button>
+  return (
+    <div className="min-h-screen bg-white p-4 md:p-6">
+      {/* 🏷️ Header */}
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-500 mb-2">
+          Nuevo método de Pago
+        </h1>
       </div>
 
-      {/* 📋 Tabla de métodos */}
-      <h3>Métodos de Pago</h3>
-      {metodos.length === 0 ? (
-        <p>No hay métodos registrados.</p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th>Método de Pago</th>
-              <th>Editar</th>
-              <th>Eliminar</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metodos.map((metodo, index) => (
-              <tr key={index}>
-                <td>{metodo.nombre}</td>
-                <td>✏️</td>
-                <td>
-                  <button onClick={() => setMetodoAEliminar(metodo)}>🗑️</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {/* 📝 Formulario Superior */}
+      <div className="bg-white rounded-lg p-6 mb-6 md:mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-end gap-4 mb-4">
+          {/* Campo Nombre del método de pago */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nombre del método de pago
+            </label>
+            <input
+              type="text"
+              value={nombreMetodo}
+              onChange={(e) => setNombreMetodo(e.target.value)}
+              placeholder="Nombre del método de pago"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700 placeholder-gray-400"
+            />
+          </div>
 
-      {/* 🧨 Modal de confirmación */}
+          {/* Botón Agregar */}
+          <div className="lg:w-auto">
+            <button
+              onClick={agregarMetodo}
+              className="w-full lg:w-auto px-6 py-2 bg-indigo-950 text-white text-sm font-medium rounded-full hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
+            >
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 📋 Lista de Métodos de Pago Inferior */}
+      <div className="bg-gray-50 rounded-lg shadow-sm overflow-hidden">
+        {/* Header con título y búsqueda */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-500 mb-4 md:mb-0">
+            Tipos de Pagos
+          </h3>
+          
+          {/* 🔍 Barra de búsqueda */}
+          <div className="w-full md:w-64">
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar método..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700 placeholder-gray-400"
+            />
+          </div>
+        </div>
+        
+        {metodosFiltrados.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 text-lg">
+              {busqueda ? 'No hay métodos que coincidan con la búsqueda.' : 'No hay métodos de pago registrados.'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            {/* 💻 Versión desktop - Tabla */}
+            <div className="hidden md:block">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-indigo-950">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                      Métodos de Pagos
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                      Editar
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                      Eliminar
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {metodosFiltrados.map((metodo) => (
+                    <tr key={metodo.id} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">{metodo.nombre}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 transition-colors duration-200">
+                          <span className="text-lg">✏️</span>
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button 
+                          onClick={() => setMetodoAEliminar(metodo)}
+                          className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                        >
+                          <span className="text-lg">🗑️</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 📱 Versión móvil - Cards */}
+            <div className="block md:hidden">
+              <div className="divide-y divide-gray-200">
+                {metodosFiltrados.map((metodo) => (
+                  <div key={metodo.id} className="p-4 hover:bg-gray-50 transition-colors duration-150">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-800 text-lg mb-2">{metodo.nombre}</h3>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <button className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-800 transition-colors duration-200">
+                        <span className="text-lg mr-2">✏️</span>
+                        Editar
+                      </button>
+                      
+                      <button 
+                        onClick={() => setMetodoAEliminar(metodo)}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-red-600 transition-colors duration-200"
+                      >
+                        <span className="text-lg mr-2">🗑️</span>
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 🧨 Modal de confirmación de eliminación */}
       {metodoAEliminar && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', maxWidth: '400px' }}>
-            <p>¿Estás seguro de eliminar este método de pago?</p>
-            <p><strong>{metodoAEliminar.nombre}</strong></p>
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Confirmar eliminación
+            </h3>
+            
+            <p className="text-gray-600 mb-2">
+              ¿Estás seguro de eliminar este método de pago?
+            </p>
+            
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <p className="font-medium text-gray-800">{metodoAEliminar.nombre}</p>
+            </div>
 
-            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setMetodoAEliminar(null)}>Cancelar</button>
-              <button onClick={confirmarEliminacion}>Eliminar</button>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setMetodoAEliminar(null)}
+                className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-full text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEliminacion}
+                className="px-4 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
+              >
+                Eliminar
+              </button>
             </div>
           </div>
         </div>
