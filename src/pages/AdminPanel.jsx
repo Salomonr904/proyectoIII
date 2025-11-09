@@ -94,21 +94,27 @@ const AdminPanel = () => {
       case 'editar-usuario':
         return <EditarUsuario cedula={cedulaActual} />;
       default:
-        return <div>Selecciona una opción del panel</div>;
+        return (
+          <div className="flex items-center justify-center h-full text-gray-500 text-lg">
+            Selecciona una opción del panel de control para comenzar
+          </div>
+        );
     }
   };
 
   return (
-    <div className="app-layout">
+    <div className="flex h-screen bg-white">
+      {/* Panel de Control */}
       <PanelDeControl onNavigate={setVista} />
-      <main className="contenido-principal">{renderContenido()}</main>
+      
+      {/* Contenido Principal */}
+      <main className="flex-1 overflow-auto lg:ml-0 transition-all duration-300">
+        <div className="p-4 lg:p-6 min-h-full">
+          {renderContenido()}
+        </div>
+      </main>
     </div>
   );
 };
 
 export default AdminPanel;
-
-
-
-
-

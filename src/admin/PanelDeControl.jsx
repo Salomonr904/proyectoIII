@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
 function PanelDeControl({ onNavigate }) {
-  const [submenuActivo, setSubmenuActivo] = useState(null); // ✅ ESTA LÍNEA ES CLAVE
+  const [submenuActivo, setSubmenuActivo] = useState(null);
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   const toggleSubmenu = (nombre) => {
     setSubmenuActivo(submenuActivo === nombre ? null : nombre);
@@ -10,59 +11,209 @@ function PanelDeControl({ onNavigate }) {
   const seleccionarOpcion = (vista) => {
     onNavigate(vista);
     setSubmenuActivo(null);
+    setMenuAbierto(false);
   };
 
   return (
-    <aside className="panel-control">
-      <div>
-        <img src="/img/institutolearning.png" alt="Logo Wenglish" />
-      </div>
-      <h3>Panel De Control</h3>
+    <>
+      {/* Botón móvil */}
+      <button 
+        className="lg:hidden fixed top-4 left-4 z-50 bg-gray-400 text-white p-3 rounded-lg shadow-lg"
+        onClick={() => setMenuAbierto(!menuAbierto)}
+      >
+        ☰
+      </button>
 
-      <button onClick={() => toggleSubmenu('usuario')}>Nuevo Usuario</button>
-      {submenuActivo === 'usuario' && (
-        <ul>
-          <li><button onClick={() => seleccionarOpcion('estudiante')}>Estudiante</button></li>
-          <li><button onClick={() => seleccionarOpcion('profesor')}>Profesor</button></li>
-          <li><button onClick={() => seleccionarOpcion('empleado')}>Empleado</button></li>
-        </ul>
+      {/* Overlay móvil */}
+      {menuAbierto && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-opacity-50 z-40"
+          onClick={() => setMenuAbierto(false)}
+        />
       )}
 
-      <button onClick={() => toggleSubmenu('cargar')}>Cargar</button>
-      {submenuActivo === 'cargar' && (
-        <ul>
-          <li><button onClick={() => seleccionarOpcion('cargar-nota')}>Notas</button></li>
-          <li><button onClick={() => seleccionarOpcion('cargar-material')}>Material</button></li>
-        </ul>
-      )}
+      {/* Panel de Control */}
+      <aside className={`
+        fixed lg:relative inset-y-0 left-0 z-40
+        w-80 bg-gradient-to-b from-gray-300 to-gray-300 text-gray-900
+        transform transition-transform duration-300 ease-in-out
+        ${menuAbierto ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        flex flex-col h-screen
+      `}>
+        
+        {/* Logo y Título */}
+        <div className="p-6 border-b border-gray-700">
+          <div className="flex items-center justify-center mb-4">
+            <img 
+              src="/img/institutolearning.png" 
+              alt="Logo Wenglish" 
+              className="h-16 w-auto object-contain"
+            />
+          </div>
+          <h1 className="text-2xl font-bold text-center text-gray-500">PANEL DE CONTROL</h1>
+        </div>
 
-      <button onClick={() => seleccionarOpcion('consultar')}>Consultar</button>
-      <button onClick={() => toggleSubmenu('crear')}>Crear</button>
-      {submenuActivo === 'crear' && (
-       <ul>
-         <li><button onClick={() => seleccionarOpcion('nuevo-nivel')}>Nuevo Nivel</button></li>
-         <li><button onClick={() => seleccionarOpcion('nuevo-curso')}>Nuevo Curso</button></li>
-         <li><button onClick={() => seleccionarOpcion('nueva-sucursal')}>Nueva Sucursal</button></li>
-         <li><button onClick={() => seleccionarOpcion('nueva-evaluacion')}>Nueva Evaluación</button></li>
-         <li><button onClick={() => seleccionarOpcion('nuevo-pago')}>Nuevo Pago</button></li>
-       </ul>
-      )}
+        {/* Menú Principal */}
+        <nav className="flex-1 p-6 space-y-4 overflow-y-auto">
+          
+          {/* Nuevo Usuario */}
+          <div className="mb-4">
+            <button 
+              onClick={() => toggleSubmenu('usuario')}
+              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-400 transition-colors"
+            >
+              <span className="font-semibold">Nuevo Usuario</span>
+              <span className={`transform transition-transform ${submenuActivo === 'usuario' ? 'rotate-180' : ''}`}>
+              </span>
+            </button>
+            {submenuActivo === 'usuario' && (
+              <div className="mt-2 ml-4 space-y-1">
+                <button 
+                  onClick={() => seleccionarOpcion('estudiante')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Estudiante
+                </button>
+                <button 
+                  onClick={() => seleccionarOpcion('profesor')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Profesor
+                </button>
+                <button 
+                  onClick={() => seleccionarOpcion('empleado')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Empleado
+                </button>
+              </div>
+            )}
+          </div>
 
-      <button onClick={() => toggleSubmenu('gestion')}>Gestionar</button>
-     {submenuActivo === 'gestion' && (
-        <ul>
-         <li><button onClick={() => seleccionarOpcion('gestionar-usuarios')}>Usuarios</button></li>
-         <li><button onClick={() => seleccionarOpcion('gestionar-cuotas')}>Cuotas</button></li>
-        </ul>
-      )}
+          {/* Consultar */}
+          <button 
+            onClick={() => seleccionarOpcion('consultar')}
+            className="w-full text-left p-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
+          >
+            Consultar
+          </button>
 
+          {/* Cargar */}
+          <div className="mb-4">
+            <button 
+              onClick={() => toggleSubmenu('cargar')}
+              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-400 transition-colors"
+            >
+              <span className="font-semibold">Cargar</span>
+              <span className={`transform transition-transform ${submenuActivo === 'cargar' ? 'rotate-180' : ''}`}>
+              </span>
+            </button>
+            {submenuActivo === 'cargar' && (
+              <div className="mt-2 ml-4 space-y-1">
+                <button 
+                  onClick={() => seleccionarOpcion('cargar-nota')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Notas
+                </button>
+                <button 
+                  onClick={() => seleccionarOpcion('cargar-material')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Material
+                </button>
+              </div>
+            )}
+          </div>
 
-      <button style={{ marginTop: 'auto' }}>Cerrar Sesión</button>
-      <p>2025 Nnes Learning Center C.A</p>
-    </aside>
+          {/* Crear */}
+          <div className="mb-4">
+            <button 
+              onClick={() => toggleSubmenu('crear')}
+              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-400 transition-colors"
+            >
+              <span className="font-semibold">Crear</span>
+              <span className={`transform transition-transform ${submenuActivo === 'crear' ? 'rotate-180' : ''}`}>
+             </span>
+            </button>
+            {submenuActivo === 'crear' && (
+              <div className="mt-2 ml-4 space-y-1">
+                <button 
+                  onClick={() => seleccionarOpcion('nuevo-nivel')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Nuevo Nivel
+                </button>
+                <button 
+                  onClick={() => seleccionarOpcion('nuevo-curso')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Nuevo Curso
+                </button>
+                <button 
+                  onClick={() => seleccionarOpcion('nueva-sucursal')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Nueva Sucursal
+                </button>
+                <button 
+                  onClick={() => seleccionarOpcion('nueva-evaluacion')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Nueva Evaluación
+                </button>
+                <button 
+                  onClick={() => seleccionarOpcion('nuevo-pago')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Nuevo Pago
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Gestionar */}
+          <div className="mb-4">
+            <button 
+              onClick={() => toggleSubmenu('gestion')}
+              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-400 transition-colors"
+            >
+              <span className="font-semibold">Gestionar</span>
+              <span className={`transform transition-transform ${submenuActivo === 'gestion' ? 'rotate-180' : ''}`}>
+              </span>
+            </button>
+            {submenuActivo === 'gestion' && (
+              <div className="mt-2 ml-4 space-y-1">
+                <button 
+                  onClick={() => seleccionarOpcion('gestionar-usuarios')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Usuarios
+                </button>
+                <button 
+                  onClick={() => seleccionarOpcion('gestionar-cuotas')}
+                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                >
+                  Cuotas
+                </button>
+              </div>
+            )}
+          </div>
+        </nav>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-700">
+          <button className="w-full flex items-center justify-center gap-2 p-3 rounded-full text-white bg-red-600 hover:bg-red-700 transition-colors font-semibold mb-4">
+            <span>←</span>
+            Cerrar Sesión
+          </button>
+          <p className="text-center text-gray-800 text-sm">
+            2025 Nnes Learning Center C.A
+          </p>
+        </div>
+      </aside>
+    </>
   );
 }
 
 export default PanelDeControl;
-
-
