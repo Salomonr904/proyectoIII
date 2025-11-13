@@ -389,13 +389,13 @@ function EditarUsuario({ cedula, onNavigate }) {
       <div className="flex justify-center gap-4 mt-8">
         <button 
           onClick={() => onNavigate('detalle-usuario')}
-          className="bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+          className="bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-full font-medium transition-colors"
         >
           Atrás
         </button>
         <button 
           onClick={() => console.log('Datos actualizados:', usuario)}
-          className="bg-indigo-700 hover:bg-indigo-800 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+          className="bg-indigo-700 hover:bg-indigo-800 text-white px-8 py-3 rounded-full font-medium transition-colors"
         >
           Guardar Cambios
         </button>
