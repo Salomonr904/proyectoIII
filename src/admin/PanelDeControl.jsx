@@ -70,19 +70,19 @@ function PanelDeControl({ onNavigate }) {
               <div className="mt-2 ml-4 space-y-1">
                 <button 
                   onClick={() => seleccionarOpcion('estudiante')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Estudiante
                 </button>
                 <button 
                   onClick={() => seleccionarOpcion('profesor')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Profesor
                 </button>
                 <button 
                   onClick={() => seleccionarOpcion('empleado')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Empleado
                 </button>
@@ -112,13 +112,13 @@ function PanelDeControl({ onNavigate }) {
               <div className="mt-2 ml-4 space-y-1">
                 <button 
                   onClick={() => seleccionarOpcion('cargar-nota')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Notas
                 </button>
                 <button 
                   onClick={() => seleccionarOpcion('cargar-material')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Material
                 </button>
@@ -140,31 +140,31 @@ function PanelDeControl({ onNavigate }) {
               <div className="mt-2 ml-4 space-y-1">
                 <button 
                   onClick={() => seleccionarOpcion('nuevo-nivel')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Nuevo Nivel
                 </button>
                 <button 
                   onClick={() => seleccionarOpcion('nuevo-curso')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Nuevo Curso
                 </button>
                 <button 
                   onClick={() => seleccionarOpcion('nueva-sucursal')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Nueva Sucursal
                 </button>
                 <button 
                   onClick={() => seleccionarOpcion('nueva-evaluacion')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Nueva Evaluación
                 </button>
                 <button 
                   onClick={() => seleccionarOpcion('nuevo-pago')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Nuevo Pago
                 </button>
@@ -186,13 +186,13 @@ function PanelDeControl({ onNavigate }) {
               <div className="mt-2 ml-4 space-y-1">
                 <button 
                   onClick={() => seleccionarOpcion('gestionar-usuarios')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Usuarios
                 </button>
                 <button 
                   onClick={() => seleccionarOpcion('gestionar-cuotas')}
-                  className="w-full text-left p-2 rounded hover:bg-gray-400 transition-colors"
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
                 >
                   Cuotas
                 </button>
