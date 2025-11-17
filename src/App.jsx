@@ -1,10 +1,11 @@
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import LoginAdmin from './pages/LoginAdmin';
-import LoginPracticas from './pages/LoginPracticas';
+import LoginPracticas from './pages/loginPracticas';
 import LoginCalificaciones from './pages/LoginCalificaciones';
 import LoadingScreen from './components/LoadingScreen';
 import AdminPanel from './pages/AdminPanel';
+import EstudiantePanel from './pages/EstudiantePanel';
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
       <Route path="/login-practicas" element={<LoginPracticas />} />
       <Route path="/login-calificaciones" element={<LoginCalificaciones />} />
       <Route path="/admin-panel" element={<AdminPanel />} />
+      <Route path="/estudiante-panel" element={<EstudiantePanel />} />
+
 
       {/* Pantallas de carga */}
       <Route path="/loading-admin" element={<LoadingScreen redirectTo="/login-admin" />} />
