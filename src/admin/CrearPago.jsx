@@ -4,89 +4,233 @@ function CrearPago() {
   const [nombreMetodo, setNombreMetodo] = useState('');
   const [metodos, setMetodos] = useState([]);
   const [metodoAEliminar, setMetodoAEliminar] = useState(null);
+  const [metodoAEditar, setMetodoAEditar] = useState(null);
   const [busqueda, setBusqueda] = useState('');
+  const [cargando, setCargando] = useState(true);
+  const [errores, setErrores] = useState({});
+
+  // URL de la API
+  const API_BASE_URL = 'http://localhost:6500/api';
+  const PAYMENTS_METHODS_ENDPOINT = `${API_BASE_URL}/payments_methods`;
 
   // 🔄 Cargar métodos desde el backend (GET)
   useEffect(() => {
-    // ⚠️ Reemplaza esta simulación por fetch real cuando tengas el backend:
-    /*
-    fetch('https://tu-backend.com/api/metodos-pago')
-      .then((res) => res.json())
-      .then((data) => setMetodos(data))
-      .catch((err) => console.error('Error al cargar métodos de pago:', err));
-    */
-
-    // 🧪 Simulación temporal con los datos de la imagen
-    const simulados = [
-      { id: 1, nombre: 'Efectivo' },
-      { id: 2, nombre: 'Tarjetas de débito o crédito' },
-      { id: 3, nombre: 'Transferencias bancarias' },
-      { id: 4, nombre: 'Pago móvil / billeteras digitales' },
-      { id: 5, nombre: 'Cheques' },
-      { id: 6, nombre: 'Criptomonedas' },
-    ];
-    setMetodos(simulados);
+    cargarMetodos();
   }, []);
 
-  const agregarMetodo = () => {
+  const cargarMetodos = async () => {
+    try {
+      setCargando(true);
+      console.log('🔄 Cargando métodos de pago desde:', PAYMENTS_METHODS_ENDPOINT);
+      
+      const res = await fetch(PAYMENTS_METHODS_ENDPOINT);
+      
+      console.log('📡 Status respuesta:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
+      }
+      
+      const result = await res.json();
+      console.log('📊 Respuesta GET payments_methods:', result);
+      
+      if (result.success && result.data) {
+        // CORREGIDO: Usar method_delete en lugar de delete
+        const datosFiltrados = result.data.filter(item => item.method_delete === false);
+        
+        const datosMapeados = datosFiltrados.map(item => ({
+          id: item.id_payment_method,
+          nombre: item.payment_method,
+        }));
+        
+        setMetodos(datosMapeados);
+        console.log('✅ Métodos de pago cargados:', datosMapeados);
+        console.log('📝 Registros activos (method_delete: false):', datosFiltrados.length);
+        console.log('📋 Total de registros en API:', result.data.length);
+      } else {
+        setMetodos([]);
+        console.log('⚠️ No hay datos en la respuesta');
+      }
+      
+    } catch (err) {
+      console.error('❌ Error al cargar métodos de pago:', err.message);
+      // Datos de ejemplo en caso de error
+      const simulados = [
+        { id: 1, nombre: 'Efectivo' },
+        { id: 2, nombre: 'Tarjeta de crédito' },
+        { id: 3, nombre: 'Transferencia bancaria' },
+      ];
+      setMetodos(simulados);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Validación del formulario
+  const validarFormulario = () => {
     if (!nombreMetodo.trim()) {
-      alert('Por favor ingresa el nombre del método de pago.');
+      setErrores({ nombre: 'El nombre del método de pago es requerido' });
+      return false;
+    }
+    setErrores({});
+    return true;
+  };
+
+  // Función para mostrar mensajes
+  const displayMessage = (message, type = 'error') => {
+    const messageDiv = document.getElementById('message');
+    if (messageDiv) {
+      messageDiv.textContent = message;
+      messageDiv.className = type === 'success' 
+        ? 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4 transition-all duration-300'
+        : 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative mb-4 transition-all duration-300';
+      messageDiv.style.visibility = 'visible';
+      messageDiv.style.height = 'auto';
+      
+      setTimeout(() => {
+        messageDiv.textContent = '';
+        messageDiv.style.visibility = 'hidden';
+        messageDiv.style.height = '0';
+        messageDiv.style.padding = '0';
+      }, 5000);
+    }
+  };
+
+  // CREAR Método de Pago (POST)
+  const agregarMetodo = async () => {
+    if (!validarFormulario()) {
       return;
     }
 
-    const nuevo = { 
-      id: Date.now(), 
-      nombre: nombreMetodo 
+    const payload = {
+      payment_method: nombreMetodo,
     };
 
-    // 🔼 Enviar nuevo método al backend (POST)
-    /*
-    fetch('https://tu-backend.com/api/metodos-pago', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(nuevo),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setMetodos((prev) => [...prev, data]);
-        setNombreMetodo('');
-      })
-      .catch((err) => {
-        console.error('Error al crear método de pago:', err);
-        alert('No se pudo crear el método.');
-      });
-    */
+    console.log('📤 Enviando POST payments_methods:', payload);
 
-    // 🧪 Simulación temporal
-    setMetodos((prev) => [...prev, nuevo]);
-    setNombreMetodo('');
+    try {
+      const res = await fetch(PAYMENTS_METHODS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+      console.log('📥 Respuesta POST:', result);
+
+      if (!res.ok) {
+        throw new Error(result.message || `Error HTTP: ${res.status}`);
+      }
+
+      if (!result.success) {
+        throw new Error(result.message || 'Error en la creación');
+      }
+
+      // Recargar los métodos
+      await cargarMetodos();
+      
+      // Limpiar formulario
+      setNombreMetodo('');
+      setErrores({});
+      
+      displayMessage('✅ Método de pago creado correctamente', 'success');
+      
+    } catch (err) {
+      console.error('Error al crear método de pago:', err.message);
+      displayMessage(`No se pudo crear el método de pago: ${err.message}`);
+    }
   };
 
-  const confirmarEliminacion = () => {
+  // ELIMINAR Método de Pago (DELETE)
+  const confirmarEliminacion = async () => {
     if (!metodoAEliminar) return;
 
-    // 🔽 Eliminar método del backend (DELETE)
-    /*
-    fetch(`https://tu-backend.com/api/metodos-pago/${metodoAEliminar.id}`, {
-      method: 'DELETE',
-    })
-      .then(() => {
-        setMetodos((prev) =>
-          prev.filter((m) => m.id !== metodoAEliminar.id)
-        );
-        setMetodoAEliminar(null);
-      })
-      .catch((err) => {
-        console.error('Error al eliminar método de pago:', err);
-        alert('No se pudo eliminar el método.');
+    try {
+      const deleteUrl = `${PAYMENTS_METHODS_ENDPOINT}/${metodoAEliminar.id}`;
+      console.log('🗑️ Enviando DELETE a:', deleteUrl);
+      
+      const res = await fetch(deleteUrl, {
+        method: 'DELETE',
       });
-    */
 
-    // 🧪 Simulación temporal
-    setMetodos((prev) =>
-      prev.filter((m) => m.id !== metodoAEliminar.id)
-    );
-    setMetodoAEliminar(null);
+      const result = await res.json();
+      console.log('📥 Respuesta DELETE:', result);
+
+      if (!res.ok) {
+        throw new Error(result.message || `Error HTTP: ${res.status}`);
+      }
+
+      if (!result.success) {
+        throw new Error(result.message || 'Error en la eliminación');
+      }
+
+      // Recargar los métodos para obtener datos actualizados
+      await cargarMetodos();
+      setMetodoAEliminar(null);
+      
+      displayMessage('✅ Método de pago eliminado correctamente', 'success');
+      
+    } catch (err) {
+      console.error('Error al eliminar método de pago:', err.message);
+      displayMessage(`No se pudo eliminar el método de pago: ${err.message}`);
+      setMetodoAEliminar(null);
+    }
+  };
+
+  // ACTUALIZAR Método de Pago (PUT)
+  const guardarEdicion = async () => {
+    if (!metodoAEditar) return;
+
+    if (!validarFormulario()) {
+      return;
+    }
+
+    const payload = {
+      payment_method: nombreMetodo,
+    };
+
+    try {
+      const updateUrl = `${PAYMENTS_METHODS_ENDPOINT}/${metodoAEditar.id}`;
+      const res = await fetch(updateUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || `Error HTTP: ${res.status}`);
+      }
+
+      if (!result.success) {
+        throw new Error(result.message || 'Error en la actualización');
+      }
+
+      // Recargar los métodos
+      await cargarMetodos();
+      setMetodoAEditar(null);
+      
+      displayMessage('✅ Método de pago actualizado correctamente', 'success');
+      
+    } catch (err) {
+      console.error('Error al actualizar método de pago:', err.message);
+      displayMessage(`No se pudo actualizar el método de pago: ${err.message}`);
+    }
+  };
+
+  // Iniciar edición
+  const iniciarEdicion = (metodo) => {
+    setMetodoAEditar(metodo);
+    setNombreMetodo(metodo.nombre);
+    setErrores({});
+  };
+
+  // Cancelar edición
+  const cancelarEdicion = () => {
+    setMetodoAEditar(null);
+    setNombreMetodo('');
+    setErrores({});
   };
 
   // 🔍 Filtrado de métodos por nombre
@@ -94,14 +238,28 @@ function CrearPago() {
     metodo.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
+  if (cargando) {
+    return (
+      <div className="min-h-screen bg-white p-4 md:p-6 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-xl shadow-lg text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Cargando métodos de pago...</h2>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white p-4 md:p-6">
       {/* 🏷️ Header */}
       <div className="mb-6 md:mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-500 mb-2">
-          Nuevo método de Pago
+          {metodoAEditar ? 'Editar Método de Pago' : 'Nuevo Método de Pago'}
         </h1>
       </div>
+
+      {/* Contenedor para mensajes */}
+      <div id="message" className="bg-red-100 border border-red-400 text-red-700 px-4 py-0 rounded-xl relative mb-4 transition-all duration-300" style={{ visibility: 'hidden', height: '0', padding: 0 }}></div>
 
       {/* 📝 Formulario Superior */}
       <div className="bg-white rounded-lg p-6 mb-6 md:mb-8">
@@ -109,25 +267,50 @@ function CrearPago() {
           {/* Campo Nombre del método de pago */}
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre del método de pago
+              Nombre del método de pago *
             </label>
             <input
               type="text"
               value={nombreMetodo}
-              onChange={(e) => setNombreMetodo(e.target.value)}
+              onChange={(e) => {
+                setNombreMetodo(e.target.value);
+                if (errores.nombre) setErrores({});
+              }}
               placeholder="Nombre del método de pago"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700 placeholder-gray-400"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700 placeholder-gray-400 ${
+                errores.nombre ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
+            {errores.nombre && (
+              <p className="text-red-500 text-xs mt-1">{errores.nombre}</p>
+            )}
           </div>
 
-          {/* Botón Agregar */}
+          {/* Botón Agregar/Guardar */}
           <div className="lg:w-auto">
-            <button
-              onClick={agregarMetodo}
-              className="w-full lg:w-auto px-6 py-2 bg-indigo-950 text-white text-sm font-medium rounded-full hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
-            >
-              Agregar
-            </button>
+            {metodoAEditar ? (
+              <div className="flex gap-4">
+                <button
+                  onClick={guardarEdicion}
+                  className="px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200"
+                >
+                  Guardar Cambios
+                </button>
+                <button
+                  onClick={cancelarEdicion}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-full hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={agregarMetodo}
+                className="w-full lg:w-auto px-6 py-2 bg-indigo-950 text-white text-sm font-medium rounded-full hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
+              >
+                Agregar
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -137,7 +320,7 @@ function CrearPago() {
         {/* Header con título y búsqueda */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-500 mb-4 md:mb-0">
-            Tipos de Pagos
+            Tipos de Pagos ({metodos.length})
           </h3>
           
           {/* 🔍 Barra de búsqueda */}
@@ -183,7 +366,10 @@ function CrearPago() {
                         <div className="text-sm font-medium text-gray-900">{metodo.nombre}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <button className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 transition-colors duration-200">
+                        <button 
+                          onClick={() => iniciarEdicion(metodo)}
+                          className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 transition-colors duration-200"
+                        >
                           <span className="text-lg">✏️</span>
                         </button>
                       </td>
@@ -213,7 +399,10 @@ function CrearPago() {
                     </div>
                     
                     <div className="flex justify-between items-center">
-                      <button className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-800 transition-colors duration-200">
+                      <button 
+                        onClick={() => iniciarEdicion(metodo)}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-800 transition-colors duration-200"
+                      >
                         <span className="text-lg mr-2">✏️</span>
                         Editar
                       </button>
@@ -236,7 +425,7 @@ function CrearPago() {
 
       {/* 🧨 Modal de confirmación de eliminación */}
       {metodoAEliminar && (
-        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Confirmar eliminación
