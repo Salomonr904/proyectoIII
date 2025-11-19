@@ -8,25 +8,61 @@ function CrearNivel() {
   const [mostrarTabla, setMostrarTabla] = useState(true);
   const [busqueda, setBusqueda] = useState('');
 
-  // 🔄 Cargar niveles desde el backend (GET)
-  useEffect(() => {
-    // ⚠️ Cuando tengas el backend, reemplaza esta simulación por fetch real:
-    /*
-    fetch('https://tu-backend.com/api/niveles')
-      .then((res) => res.json())
-      .then((data) => setNiveles(data))
-      .catch((err) => console.error('Error al cargar niveles:', err));
-    */
+  //----------------------------------------------------------------------------------------------
+  async function obtenerNiveles() {
+  const url = 'http://localhost:6500/api/level';
+  const apiKey = "";
+  
+  const maxRetries = 3;
+  let currentDelay = 1000;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const respuesta = await fetch(url, {
+        method: "GET",
+        headers: {
+            'Content-Type': 'application/json',
+            ...(apiKey && { 'X-Api-Key': apiKey }) 
+        }
+      });
 
-    // 🧪 Simulación temporal
-    const nivelesSimulados = [
-      { nombre: 'Básico', dias: ['Lunes', 'Jueves'] },
-      { nombre: 'Intermedio', dias: ['Martes', 'Viernes'] },
-      { nombre: 'Avanzado', dias: ['Miércoles', 'Sábado'] },
-    ];
-    setNiveles(nivelesSimulados);
-  }, []);
+      if (!respuesta.ok) {
+        throw new Error(`Error HTTP: ${respuesta.status} ${respuesta.statusText}`);
+      }
 
+      const niveles = await respuesta.json();
+
+      console.log("✅ Solicitud exitosa. Datos recibidos:");
+      console.log(niveles.data);
+
+      return niveles.data; 
+
+    } catch (error) {
+      console.error(`❌ Intento ${attempt + 1} fallido. Error al obtener niveles:`, error.message);
+      
+      if (attempt === maxRetries - 1) {
+        console.error("Máximo número de reintentos alcanzado. Fallo definitivo.");
+        return null; 
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, currentDelay));
+      console.log(`Reintentando en ${currentDelay / 1000} segundos...`);
+      currentDelay *= 2;
+    }
+  }
+}
+
+const levels = obtenerNiveles();
+
+/*
+const nivelesSimulados = [
+  { nombre: 'Básico', dias: ['Lunes', 'Jueves'] },
+  { nombre: 'Intermedio', dias: ['Martes', 'Viernes'] },
+  { nombre: 'Avanzado', dias: ['Miércoles', 'Sábado'] },
+];
+// setNiveles(nivelesSimulados);
+*/
+//-----------------------------------------------------
   const diasDisponibles = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
   const toggleDia = (dia) => {
@@ -78,7 +114,7 @@ function CrearNivel() {
     // 🔽 Eliminar nivel del backend (DELETE)
     // ⚠️ Cuando tengas el backend, reemplaza esta simulación por fetch real:
     /*
-    fetch(`https://tu-backend.com/api/niveles/${nivelAEliminar.nombre}`, {
+    fetch(https://tu-backend.com/api/niveles/${nivelAEliminar.nombre}, {
       method: 'DELETE',
     })
       .then(() => {
@@ -133,17 +169,21 @@ function CrearNivel() {
               Día de clases
             </label>
             <div className="flex flex-wrap gap-2">
-              {diasDisponibles.map((dia) => (
-                <label key={dia} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={diasSeleccionados.includes(dia)}
-                    onChange={() => toggleDia(dia)}
-                    className="w-4 h-4 text-indigo-950 border-gray-300 rounded focus:ring-indigo-950"
-                  />
-                  <span className="text-sm text-gray-700 whitespace-nowrap">{dia}</span>
-                </label>
-              ))}
+                <select 
+                id="level-select" 
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-inner"
+              >
+                <option value="">-- Elige un nivel --</option>
+                {levels.map((level) => (
+                  <option 
+                    key={level.id_level} 
+                    value={level.id_level} 
+                    className="p-2"
+                  > 
+                    {level.level_name} 
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
