@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import {useNavigate} from 'react-router-dom';
 
 function PanelDeControl({ onNavigate }) {
+  const navigate = useNavigate();
   const [submenuActivo, setSubmenuActivo] = useState(null);
   const [menuAbierto, setMenuAbierto] = useState(false);
 
@@ -13,6 +15,28 @@ function PanelDeControl({ onNavigate }) {
     setSubmenuActivo(null);
     setMenuAbierto(false);
   };
+
+  async function logout() {
+
+    const res = await fetch('http://localhost:6500/api/logout', {
+      method: 'DELETE',
+      mode: 'cors',
+      credentials: 'include'
+    });
+
+    const response = await res.json();
+
+    if (!response.ok) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      navigate('/login-admin');
+      return;
+    }
+
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    navigate('/login-admin');
+  }
 
   return (
     <>
@@ -203,7 +227,7 @@ function PanelDeControl({ onNavigate }) {
 
         {/* Footer */}
         <div className="p-6 border-t border-gray-700">
-          <button className="w-full flex items-center justify-center gap-2 p-3 rounded-full text-white bg-red-600 hover:bg-red-700 transition-colors font-semibold mb-4">
+          <button onClick={logout} className="w-full flex items-center justify-center gap-2 p-3 rounded-full text-white bg-red-600 hover:bg-red-700 transition-colors font-semibold mb-4">
             <span>←</span>
             Cerrar Sesión
           </button>
