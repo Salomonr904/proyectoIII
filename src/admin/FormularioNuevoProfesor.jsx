@@ -164,7 +164,7 @@ function FormularioNuevoProfesor({ onContinuar }) {
 
   return (
     <div className="min-h-screen bg-white py-8 px-4">
-      <form className="max-w-5xl mx-auto" onSubmit={handleSubmit}>
+      <form className="w-full mx-auto" onSubmit={handleSubmit}>
         {/* Encabezado */}
         <div className="bg-white text-gray-500 py-4 px-6 rounded-t-lg ">
           <h2 className="text-2xl font-bold">Nuevo Profesor</h2>

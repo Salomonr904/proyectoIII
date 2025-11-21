@@ -196,7 +196,7 @@ function GestionNotas() {
     <div className="min-h-screen p-4 md:p-6">
       {/* Header de la página */}
       <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-500 mb-2">
           Gestión de Notas
         </h1>
       </div>
