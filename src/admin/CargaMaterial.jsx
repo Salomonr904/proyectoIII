@@ -343,7 +343,11 @@ function CargaMaterial() {
       <div className="p-6 mb-4 bg-gray-50 rounded-lg">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <h3 className="text-lg font-semibold text-gray-800 mb-2 md:mb-0">
+<<<<<<< HEAD
             Consultar {materiales.length > 0 && `(${materiales.length})`}
+=======
+            Materiales en Base de Datos {materiales.length > 0 && `(${materiales.length})`}
+>>>>>>> 5e61dd5d79fbf336925c17e6f7b67ed558ce522e
           </h3>
           <div className="flex items-center space-x-4">
             <label className="block text-sm font-medium text-gray-700">Filtrar por Listening:</label>
