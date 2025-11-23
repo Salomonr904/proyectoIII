@@ -259,15 +259,6 @@ function CargaMaterial() {
       {/* Encabezado */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-500">Listening</h1>
-        <p className="text-sm text-gray-600 mt-2">
-          Tipos de material cargados: {tiposMaterial.length} tipos desde la base de datos
-        </p>
-        <p className="text-sm text-gray-600">
-          Niveles disponibles: {niveles.length} niveles desde la base de datos
-        </p>
-        <p className="text-sm text-gray-600">
-          Materiales cargados: {materiales.length} materiales desde la base de datos
-        </p>
       </div>
 
       {/* Sección de Nuevo Material */}
