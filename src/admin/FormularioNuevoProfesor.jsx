@@ -12,6 +12,9 @@ function FormularioNuevoProfesor({ onContinuar }) {
   });
   const [cargando, setCargando] = useState(false);
   const [errores, setErrores] = useState({});
+  
+  // ✅ SOLUCIÓN: Usar estado para el mensaje
+  const [mensaje, setMensaje] = useState({ texto: '', tipo: '', visible: false });
 
   // URL de la API
   const API_BASE_URL = 'http://localhost:6500/api';
@@ -25,6 +28,15 @@ function FormularioNuevoProfesor({ onContinuar }) {
     if (errores[name]) {
       setErrores(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  // ✅ CORRECCIÓN: Función displayMessage corregida
+  const displayMessage = (message, messageType = 'error') => {
+    setMensaje({ texto: message, tipo: messageType, visible: true });
+    
+    setTimeout(() => {
+      setMensaje({ texto: '', tipo: '', visible: false });
+    }, 5000);
   };
 
   // Validación del formulario
@@ -59,26 +71,6 @@ function FormularioNuevoProfesor({ onContinuar }) {
     return Object.keys(nuevosErrores).length === 0;
   };
 
-  // Función para mostrar mensajes
-  const displayMessage = (message, type = 'error') => {
-    const messageDiv = document.getElementById('message');
-    if (messageDiv) {
-      messageDiv.textContent = message;
-      messageDiv.className = type === 'success' 
-        ? 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative mb-4 transition-all duration-300'
-        : 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative mb-4 transition-all duration-300';
-      messageDiv.style.visibility = 'visible';
-      messageDiv.style.height = 'auto';
-      
-      setTimeout(() => {
-        messageDiv.textContent = '';
-        messageDiv.style.visibility = 'hidden';
-        messageDiv.style.height = '0';
-        messageDiv.style.padding = '0';
-      }, 5000);
-    }
-  };
-
   const handleCancelar = () => {
     setDatos({
       cedula: '',
@@ -96,12 +88,13 @@ function FormularioNuevoProfesor({ onContinuar }) {
     e.preventDefault();
     
     if (!validarFormulario()) {
+      displayMessage('Por favor, complete todos los campos requeridos correctamente.');
       return;
     }
 
     setCargando(true);
 
-    // Preparar el payload según la estructura de tu API (sin dirección ni teléfono emergencia)
+    // Preparar el payload según la estructura de tu API
     const payload = {
       teacher_cedula: parseInt(datos.cedula),
       teacher_first_name: datos.primerNombre,
@@ -151,8 +144,12 @@ function FormularioNuevoProfesor({ onContinuar }) {
       // Limpiar formulario después de éxito
       handleCancelar();
       
-      // Si necesitas continuar a otro paso, descomenta esta línea:
-      // onContinuar('registro-usuario', datos.cedula);
+      // ✅ Redirigir al formulario de usuario con la cédula
+      setTimeout(() => {
+        if (onContinuar) {
+          onContinuar('registro-usuario', datos.cedula);
+        }
+      }, 1500);
       
     } catch (err) {
       console.error('Error al crear profesor:', err.message);
@@ -170,8 +167,16 @@ function FormularioNuevoProfesor({ onContinuar }) {
           <h2 className="text-2xl font-bold">Nuevo Profesor</h2>
         </div>
 
-        {/* Contenedor para mensajes */}
-        <div id="message" className="bg-red-100 border border-red-400 text-red-700 px-4 py-0 rounded-xl relative mb-4 transition-all duration-300" style={{ visibility: 'hidden', height: '0', padding: 0 }}></div>
+        {/* ✅ Mensaje condicional usando estado */}
+        {mensaje.visible && (
+          <div className={`${
+            mensaje.tipo === 'success' 
+              ? 'bg-green-100 border border-green-400 text-green-700' 
+              : 'bg-red-100 border border-red-400 text-red-700'
+          } px-4 py-3 rounded-xl relative mb-4 transition-all duration-300`}>
+            {mensaje.texto}
+          </div>
+        )}
 
         {/* Contenedor principal con borde y sombra */}
         <div className="bg-white rounded-b-lg p-6 border-gray-200">

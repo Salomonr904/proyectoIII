@@ -23,6 +23,7 @@ import RegistrarCuota from '../admin/RegistrarCuota';
 const AdminPanel = () => {
   const [vista, setVista] = useState(null);
   const [cedulaActual, setCedulaActual] = useState('');
+  const [usuarioActual, setUsuarioActual] = useState(null);
 
   const handleContinuar = (nuevaVista, cedula) => {
     setCedulaActual(cedula);
@@ -83,16 +84,24 @@ const AdminPanel = () => {
       case 'consultar':
         return (
           <ConsultaUsuarios
-            onVerUsuario={(cedula) => {
-              setCedulaActual(cedula);
+            onVerUsuario={(usuario) => {
+              console.log('=== ADMIN PANEL: Usuario recibido ===');
+              console.log('Cédula:', usuario.cedula);
+              console.log('Tipo:', usuario.tipo);
+              console.log('Nombre:', usuario.nombre);
+              
+              setCedulaActual(usuario.cedula);
+              setUsuarioActual(usuario); // Guardar el usuario completo por si se necesita
               setVista('detalle-usuario');
+              
+              console.log('Redirigiendo a detalle-usuario...');
             }}
           />
         );
       case 'detalle-usuario':
         return <DetalleUsuario cedula={cedulaActual} onNavigate={setVista} />;
       case 'editar-usuario':
-        return <EditarUsuario cedula={cedulaActual} />;
+        return <EditarUsuario cedula={cedulaActual} usuario={usuarioActual} />;
       default:
         return (
           <div className="flex items-center justify-center h-full text-gray-500 text-lg">

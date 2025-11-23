@@ -462,8 +462,16 @@ function FormularioNuevoEstudiante({ onContinuar }) {
 
       displayMessage('✅ Estudiante creado correctamente' + (necesitaRepresentante ? ' con representante' : ''), 'success');
       
-      // Limpiar formulario después de éxito
-      handleCancelar();
+      // MODIFICACIÓN: En lugar de limpiar el formulario, redirigir al formulario de usuario
+      // Limpiar formulario después de éxito (opcional, puedes comentar esta línea si quieres mantener los datos)
+      // handleCancelar();
+      
+      // Redirigir al formulario de registro de usuario después de 1.5 segundos
+      setTimeout(() => {
+        if (onContinuar) {
+          onContinuar('registro-usuario', datos.cedula);
+        }
+      }, 1500);
       
     } catch (err) {
       console.error('❌ Error al crear estudiante:', err.message);

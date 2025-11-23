@@ -5,76 +5,75 @@ function GestionUsuarios({ onVerRestablecer }) {
   const [busqueda, setBusqueda] = useState('');
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
   
   // 🎛️ Estados para los filtros
   const [filtroEstado, setFiltroEstado] = useState('Todos');
-  const [filtroNivel, setFiltroNivel] = useState('Todos');
   const [filtroTipo, setFiltroTipo] = useState('Todos');
   const [mostrarFiltroEstado, setMostrarFiltroEstado] = useState(false);
-  const [mostrarFiltroNivel, setMostrarFiltroNivel] = useState(false);
   const [mostrarFiltroTipo, setMostrarFiltroTipo] = useState(false);
 
+  // 🔄 Función para obtener usuarios del backend
+  const obtenerUsuarios = async () => {
+    try {
+      setCargando(true);
+      setError(null);
+      const response = await fetch('http://localhost:6500/api/users');
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const resultado = await response.json();
+      
+      // Verificar que la respuesta tenga la estructura esperada
+      if (!resultado.success || !Array.isArray(resultado.data)) {
+        console.error('Estructura de respuesta inválida:', resultado);
+        throw new Error('Formato de respuesta inválido del servidor');
+      }
+      
+      // Transformar los datos del backend al formato que espera el componente
+      const usuariosTransformados = resultado.data.map(usuario => ({
+        id: usuario.id_user,
+        nombre: usuario.full_name,
+        cedula: usuario.cedula_person.toString(),
+        estado: usuario.status ? 'Activo' : 'Deshabilitado',
+        tipo: usuario.person_type === 'teacher' ? 'Profesor' : 
+              usuario.person_type === 'student' ? 'Estudiante' : 'Empleado',
+        // Mantener datos originales del backend por si los necesitas
+        datosOriginales: usuario
+      }));
+      
+      setUsuarios(usuariosTransformados);
+    } catch (err) {
+      console.error('Error al obtener usuarios:', err);
+      setError(`Error al cargar usuarios: ${err.message}`);
+      // Mantener datos de simulación como fallback
+      const usuariosSimulados = [
+        { 
+          id: 1, 
+          nombre: 'Miguel Guerra', 
+          cedula: '00.000.000', 
+          estado: 'Activo',
+          tipo: 'Profesor'
+        },
+        { 
+          id: 2, 
+          nombre: 'Valentina Villalba', 
+          cedula: '00.000.001', 
+          estado: 'Deshabilitado',
+          tipo: 'Estudiante'
+        }
+      ];
+      setUsuarios(usuariosSimulados);
+    } finally {
+      setCargando(false);
+    }
+  };
+
   useEffect(() => {
-    // 🧪 Datos de simulación temporal con nuevos campos
-    const usuariosSimulados = [
-      { 
-        id: 1, 
-        nombre: 'Miguel Guerra', 
-        cedula: '00.000.000', 
-        estado: 'Activo',
-        nivel: 'Avanzado',
-        tipo: 'Profesor'
-      },
-      { 
-        id: 2, 
-        nombre: 'Valentina Villalba', 
-        cedula: '00.000.001', 
-        estado: 'Deshabilitado',
-        nivel: 'Intermedio',
-        tipo: 'Estudiante'
-      },
-      { 
-        id: 3, 
-        nombre: 'Moises Gil', 
-        cedula: '00.000.002', 
-        estado: 'Activo',
-        nivel: 'Básico',
-        tipo: 'Empleado'
-      },
-      { 
-        id: 4, 
-        nombre: 'Marina Da Silva', 
-        cedula: '00.000.003', 
-        estado: 'Activo',
-        nivel: 'Intermedio',
-        tipo: 'Estudiante'
-      },
-      { 
-        id: 5, 
-        nombre: 'Jose Montesino', 
-        cedula: '00.000.004', 
-        estado: 'Deshabilitado',
-        nivel: 'Avanzado',
-        tipo: 'Profesor'
-      },
-      { 
-        id: 6, 
-        nombre: 'Oscar Amputía', 
-        cedula: '00.000.005', 
-        estado: 'Activo',
-        nivel: 'Básico',
-        tipo: 'Empleado'
-      },
-      { 
-        id: 7, 
-        nombre: 'Fabiola Rodríguez', 
-        cedula: '00.000.006', 
-        estado: 'Activo',
-        nivel: 'Intermedio',
-        tipo: 'Estudiante'
-      },
-    ];
-    setUsuarios(usuariosSimulados);
+    obtenerUsuarios();
   }, []);
 
   // 🔍 Filtrado combinado de usuarios
@@ -82,10 +81,9 @@ function GestionUsuarios({ onVerRestablecer }) {
     const coincideBusqueda = usuario.cedula.includes(busqueda.trim()) || 
                             usuario.nombre.toLowerCase().includes(busqueda.toLowerCase());
     const coincideEstado = filtroEstado === 'Todos' || usuario.estado === filtroEstado;
-    const coincideNivel = filtroNivel === 'Todos' || usuario.nivel === filtroNivel;
     const coincideTipo = filtroTipo === 'Todos' || usuario.tipo === filtroTipo;
     
-    return coincideBusqueda && coincideEstado && coincideNivel && coincideTipo;
+    return coincideBusqueda && coincideEstado && coincideTipo;
   });
 
   // 🎯 Manejar selección para cambio de estado
@@ -94,23 +92,51 @@ function GestionUsuarios({ onVerRestablecer }) {
     setMostrarConfirmacion(true);
   };
 
-  // 🔄 Cambiar estado del usuario
+  // 🔄 Cambiar estado del usuario - SOLUCIÓN CORREGIDA
   const cambiarEstado = async () => {
     if (!usuarioSeleccionado) return;
     
     const nuevoEstado = usuarioSeleccionado.estado === 'Activo' ? 'Deshabilitado' : 'Activo';
+    const nuevoStatus = usuarioSeleccionado.estado === 'Activo' ? false : true;
 
-    // 🧪 Simulación temporal del cambio de estado
-    setUsuarios(prevUsuarios =>
-      prevUsuarios.map(u =>
-        u.id === usuarioSeleccionado.id
-          ? { ...u, estado: nuevoEstado }
-          : u
-      )
-    );
-    
-    setMostrarConfirmacion(false);
-    setUsuarioSeleccionado(null);
+    try {
+      // Usar siempre PUT para cambiar el estado, enviando el nuevo status en el body
+      const response = await fetch(`http://localhost:6500/api/users/${usuarioSeleccionado.cedula}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: nuevoStatus
+        })
+      });
+
+      const resultado = await response.json();
+
+      if (!response.ok) {
+        console.error('Error del servidor:', resultado);
+        throw new Error(resultado.message || `Error al cambiar el estado del usuario`);
+      }
+
+      // Actualizar el estado local si la llamada al backend fue exitosa
+      setUsuarios(prevUsuarios =>
+        prevUsuarios.map(u =>
+          u.id === usuarioSeleccionado.id
+            ? { ...u, estado: nuevoEstado }
+            : u
+        )
+      );
+      
+      // Mostrar mensaje de éxito
+      alert(`Usuario ${nuevoEstado === 'Activo' ? 'activado' : 'desactivado'} exitosamente`);
+      
+    } catch (error) {
+      console.error('Error al cambiar estado:', error);
+      alert(`Error al cambiar el estado del usuario: ${error.message}`);
+    } finally {
+      setMostrarConfirmacion(false);
+      setUsuarioSeleccionado(null);
+    }
   };
 
   // ❌ Cancelar cambio de estado
@@ -119,11 +145,15 @@ function GestionUsuarios({ onVerRestablecer }) {
     setUsuarioSeleccionado(null);
   };
 
+  // 🔄 Función para recargar usuarios
+  const recargarUsuarios = () => {
+    obtenerUsuarios();
+  };
+
   // Cerrar menús desplegables al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = () => {
       setMostrarFiltroEstado(false);
-      setMostrarFiltroNivel(false);
       setMostrarFiltroTipo(false);
     };
 
@@ -140,7 +170,27 @@ function GestionUsuarios({ onVerRestablecer }) {
           <h1 className="text-2xl md:text-3xl font-bold text-gray-500 mb-2">
             Gestionar Usuarios
           </h1>
+          {/* Botón de recargar */}
+          <button
+            onClick={recargarUsuarios}
+            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
+          >
+            🔄 Actualizar
+          </button>
         </div>
+
+        {/* Estado de carga y error */}
+        {cargando && (
+          <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg">
+            Cargando usuarios...
+          </div>
+        )}
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
 
         {/* 🔍 Contenedor de Filtros y Búsqueda */}
         <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
@@ -152,7 +202,6 @@ function GestionUsuarios({ onVerRestablecer }) {
                 onClick={(e) => {
                   e.stopPropagation();
                   setMostrarFiltroEstado(!mostrarFiltroEstado);
-                  setMostrarFiltroNivel(false);
                   setMostrarFiltroTipo(false);
                 }}
                 className={`flex items-center px-7 py-2.5 border rounded-lg text-sm font-medium transition-colors duration-200 ${
@@ -203,73 +252,6 @@ function GestionUsuarios({ onVerRestablecer }) {
               )}
             </div>
 
-            {/* Botón Filtro Nivel */}
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMostrarFiltroNivel(!mostrarFiltroNivel);
-                  setMostrarFiltroEstado(false);
-                  setMostrarFiltroTipo(false);
-                }}
-                className={`flex items-center px-7 py-2.5 border rounded-lg text-sm font-medium transition-colors duration-200 ${
-                  filtroNivel !== 'Todos' 
-                    ? 'border-indigo-950 text-indigo-800 bg-indigo-50' 
-                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                }`}
-              >
-                <span className="mr-1"></span>
-                Nivel: {filtroNivel}
-              </button>
-              
-              {mostrarFiltroNivel && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  <div className="p-2">
-                    <button
-                      onClick={() => setFiltroNivel('Todos')}
-                      className={`block w-full text-left px-3 py-2 text-sm rounded-md mb-1 ${
-                        filtroNivel === 'Todos' 
-                          ? 'bg-indigo-100 text-indigo-950' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Todos
-                    </button>
-                    <button
-                      onClick={() => setFiltroNivel('Básico')}
-                      className={`block w-full text-left px-3 py-2 text-sm rounded-md mb-1 ${
-                        filtroNivel === 'Básico' 
-                          ? 'bg-indigo-100 text-indigo-700' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Básico
-                    </button>
-                    <button
-                      onClick={() => setFiltroNivel('Intermedio')}
-                      className={`block w-full text-left px-3 py-2 text-sm rounded-md mb-1 ${
-                        filtroNivel === 'Intermedio' 
-                          ? 'bg-indigo-100 text-indigo-700' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Intermedio
-                    </button>
-                    <button
-                      onClick={() => setFiltroNivel('Avanzado')}
-                      className={`block w-full text-left px-3 py-2 text-sm rounded-md ${
-                        filtroNivel === 'Avanzado' 
-                          ? 'bg-indigo-100 text-indigo-700' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Avanzado
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Botón Filtro Tipo */}
             <div className="relative">
               <button
@@ -277,7 +259,6 @@ function GestionUsuarios({ onVerRestablecer }) {
                   e.stopPropagation();
                   setMostrarFiltroTipo(!mostrarFiltroTipo);
                   setMostrarFiltroEstado(false);
-                  setMostrarFiltroNivel(false);
                 }}
                 className={`flex items-center px-7 py-2.5 border rounded-lg text-sm font-medium transition-colors duration-200 ${
                   filtroTipo !== 'Todos' 
@@ -351,11 +332,18 @@ function GestionUsuarios({ onVerRestablecer }) {
         </div>
       </div>
 
-      {/* 📊 Tabla de usuarios - Se mantiene igual desde aquí */}
+      {/* 📊 Tabla de usuarios */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {/* Estado de carga */}
+        {cargando && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 text-lg">Cargando usuarios...</p>
+          </div>
+        )}
+
         {/* 📱 Versión móvil - Cards */}
         <div className="block md:hidden">
-          {usuariosFiltrados.length === 0 ? (
+          {!cargando && usuariosFiltrados.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 text-lg">No hay usuarios que coincidan con la búsqueda.</p>
             </div>
@@ -371,9 +359,6 @@ function GestionUsuarios({ onVerRestablecer }) {
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                           {usuario.tipo}
                         </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                          {usuario.nivel}
-                        </span>
                       </div>
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -385,7 +370,7 @@ function GestionUsuarios({ onVerRestablecer }) {
                     </span>
                   </div>
                   
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-2">
                     <button
                       onClick={() => onVerRestablecer(usuario.cedula)}
                       className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
@@ -413,7 +398,7 @@ function GestionUsuarios({ onVerRestablecer }) {
 
         {/* 💻 Versión desktop - Tabla */}
         <div className="hidden md:block overflow-x-auto">
-          {usuariosFiltrados.length === 0 ? (
+          {!cargando && usuariosFiltrados.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 text-lg">No hay usuarios que coincidan con la búsqueda.</p>
             </div>
@@ -429,9 +414,6 @@ function GestionUsuarios({ onVerRestablecer }) {
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     Tipo
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    Nivel
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     Estado
@@ -456,11 +438,6 @@ function GestionUsuarios({ onVerRestablecer }) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {usuario.tipo}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {usuario.nivel}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -501,9 +478,9 @@ function GestionUsuarios({ onVerRestablecer }) {
         </div>
       </div>
 
-      {/* 🎯 Modal de confirmación - Se mantiene igual */}
+      {/* 🎯 Modal de confirmación para cambio de estado */}
       {mostrarConfirmacion && usuarioSeleccionado && (
-        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Confirmar cambio de estado
