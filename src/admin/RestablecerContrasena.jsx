@@ -81,7 +81,7 @@ function RestablecerContrasena({ cedula, onVolver }) {
 
   return (
     <div className="min-h-screen bg-white py-8 px-4">
-      <div className="max-w-5xl mx-auto">
+      <div className="w-full mx-auto">
         {/* Encabezado */}
         <div className="bg-white text-gray-500 py-4 px-6 rounded-t-lg">
           <h2 className="text-2xl font-bold">Restablecer Contraseña</h2>
