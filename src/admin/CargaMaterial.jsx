@@ -22,7 +22,7 @@ function CargaMaterial() {
         const response = await fetch('http://localhost:6500/api/level');
         
         if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
+          throw new Error(Error ${response.status}: ${response.statusText});
         }
         
         const result = await response.json();
@@ -59,7 +59,7 @@ function CargaMaterial() {
         const response = await fetch('http://localhost:6500/api/typesMaterials');
         
         if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
+          throw new Error(Error ${response.status}: ${response.statusText});
         }
         
         const result = await response.json();
@@ -89,8 +89,8 @@ function CargaMaterial() {
           
           for (const nivel of niveles) {
             try {
-              console.log(`🔄 Cargando materiales del nivel ${nivel.id_level}...`);
-              const response = await fetch(`http://localhost:6500/api/materials/level/${nivel.id_level}`);
+              console.log(🔄 Cargando materiales del nivel ${nivel.id_level}...);
+              const response = await fetch(http://localhost:6500/api/materials/level/${nivel.id_level});
               
               if (response.ok) {
                 const result = await response.json();
@@ -99,10 +99,10 @@ function CargaMaterial() {
                   const materialesTransformados = result.data.map(material => ({
                     id: material.id_material,
                     nombre: material.name_material,
-                    listening: `listening${material.level_id}`,
+                    listening: listening${material.level_id},
                     tipoArchivo: obtenerNombreTipo(material.type_material_id),
                     archivo: material.original_name || 'archivo',
-                    url: material.material ? `http://localhost:6500${material.material}` : '#',
+                    url: material.material ? http://localhost:6500${material.material} : '#',
                     level_id: material.level_id
                   }));
                   
@@ -110,7 +110,7 @@ function CargaMaterial() {
                 }
               }
             } catch (error) {
-              console.error(`❌ Error cargando materiales del nivel ${nivel.id_level}:`, error);
+              console.error(❌ Error cargando materiales del nivel ${nivel.id_level}:, error);
             }
           }
           
@@ -144,7 +144,7 @@ function CargaMaterial() {
   // FUNCIÓN PARA OBTENER EL NOMBRE DEL NIVEL (FLEXIBLE)
   const obtenerNombreNivel = (nivel) => {
     // Intentar diferentes nombres de propiedades
-    return nivel.name_level || nivel.name || nivel.nombre || nivel.level_name || `Listening ${nivel.id_level}`;
+    return nivel.name_level || nivel.name || nivel.nombre || nivel.level_name || Listening ${nivel.id_level};
   };
 
   const handleAgregar = async (e) => {
@@ -174,10 +174,10 @@ function CargaMaterial() {
         const nuevoMaterial = {
           id: result.data.id_material,
           nombre: result.data.name_material,
-          listening: `listening${result.data.level_id}`,
+          listening: listening${result.data.level_id},
           tipoArchivo: obtenerNombreTipo(result.data.type_material_id),
           archivo: result.data.original_name || archivo.name,
-          url: result.data.material ? `http://localhost:6500${result.data.material}` : URL.createObjectURL(archivo),
+          url: result.data.material ? http://localhost:6500${result.data.material} : URL.createObjectURL(archivo),
           level_id: result.data.level_id
         };
 
@@ -225,7 +225,7 @@ function CargaMaterial() {
     try {
       const material = materiales[index];
       
-      const response = await fetch(`http://localhost:6500/api/materials/${material.id}`, {
+      const response = await fetch(http://localhost:6500/api/materials/${material.id}, {
         method: 'DELETE'
       });
 
@@ -237,7 +237,7 @@ function CargaMaterial() {
         setMateriales(nuevos);
         alert('✅ Material eliminado de la base de datos');
       } else {
-        throw new Error(result.message || `Error ${response.status} al eliminar`);
+        throw new Error(result.message || Error ${response.status} al eliminar);
       }
       
     } catch (error) {
@@ -259,6 +259,15 @@ function CargaMaterial() {
       {/* Encabezado */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-500">Listening</h1>
+        <p className="text-sm text-gray-600 mt-2">
+          Tipos de material cargados: {tiposMaterial.length} tipos desde la base de datos
+        </p>
+        <p className="text-sm text-gray-600">
+          Niveles disponibles: {niveles.length} niveles desde la base de datos
+        </p>
+        <p className="text-sm text-gray-600">
+          Materiales cargados: {materiales.length} materiales desde la base de datos
+        </p>
       </div>
 
       {/* Sección de Nuevo Material */}
@@ -289,9 +298,9 @@ function CargaMaterial() {
                 <option value="">-- Seleccione --</option>
                 {niveles.map((nivel) => {
                   const nombreNivel = obtenerNombreNivel(nivel);
-                  console.log(`🎯 Renderizando nivel:`, nivel, 'Nombre:', nombreNivel);
+                  console.log(🎯 Renderizando nivel:, nivel, 'Nombre:', nombreNivel);
                   return (
-                    <option key={nivel.id_level} value={`listening${nivel.id_level}`}>
+                    <option key={nivel.id_level} value={listening${nivel.id_level}}>
                       {nombreNivel}
                     </option>
                   );
@@ -343,11 +352,7 @@ function CargaMaterial() {
       <div className="p-6 mb-4 bg-gray-50 rounded-lg">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <h3 className="text-lg font-semibold text-gray-800 mb-2 md:mb-0">
-<<<<<<< HEAD
-            Consultar {materiales.length > 0 && `(${materiales.length})`}
-=======
-            Materiales en Base de Datos {materiales.length > 0 && `(${materiales.length})`}
->>>>>>> 5e61dd5d79fbf336925c17e6f7b67ed558ce522e
+            Materiales en Base de Datos {materiales.length > 0 && (${materiales.length})}
           </h3>
           <div className="flex items-center space-x-4">
             <label className="block text-sm font-medium text-gray-700">Filtrar por Listening:</label>
@@ -361,7 +366,7 @@ function CargaMaterial() {
             >
               <option value="">-- Ver todos --</option>
               {niveles.map((nivel) => (
-                <option key={nivel.id_level} value={`listening${nivel.id_level}`}>
+                <option key={nivel.id_level} value={listening${nivel.id_level}}>
                   {obtenerNombreNivel(nivel)}
                 </option>
               ))}
@@ -387,7 +392,7 @@ function CargaMaterial() {
             {materialesPaginados.length > 0 ? (
               materialesPaginados.map((mat, index) => {
                 const nivelCorrespondiente = niveles.find(n => n.id_level === parseInt(mat.level_id));
-                const nombreNivel = nivelCorrespondiente ? obtenerNombreNivel(nivelCorrespondiente) : `Listening ${mat.level_id}`;
+                const nombreNivel = nivelCorrespondiente ? obtenerNombreNivel(nivelCorrespondiente) : Listening ${mat.level_id};
                 
                 return (
                   <tr key={mat.id} className="hover:bg-gray-50 transition-colors">
