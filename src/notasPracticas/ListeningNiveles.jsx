@@ -10,7 +10,7 @@ const niveles = [
 
 const ListeningNiveles = ({ onAbrirRecurso }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-ful mx-auto">
       {niveles.map((nivel) => (
         <div key={nivel.id} className={`p-6 rounded-xl shadow-md ${nivel.color}`}>
           <h3 className="text-lg font-bold text-gray-800 mb-4">{nivel.titulo}</h3>
