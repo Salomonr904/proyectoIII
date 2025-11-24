@@ -6,19 +6,8 @@ function EditarUsuario({ cedula, onNavigate }) {
   const [error, setError] = useState(null);
   const [profesores, setProfesores] = useState([]);
   const [sucursales, setSucursales] = useState([]);
-  const [studentId, setStudentId] = useState(null); // Nuevo estado para el ID del estudiante
-
-  // Función para obtener el nombre del nivel en español
-  const obtenerNombreNivel = (levelName) => {
-    const niveles = {
-      'elementary': 'Elemental',
-      'basic': 'Básico', 
-      'intermediate': 'Intermedio',
-      'advanced': 'Avanzado',
-      'proficiency': 'Perfeccionamiento'
-    };
-    return niveles[levelName] || levelName || 'No asignado';
-  };
+  const [niveles, setNiveles] = useState([]); // Nuevo estado para niveles
+  const [studentId, setStudentId] = useState(null);
 
   // Obtener lista de profesores
   const obtenerProfesores = async () => {
@@ -49,6 +38,20 @@ function EditarUsuario({ cedula, onNavigate }) {
       }
     } catch (err) {
       console.error('Error al cargar sucursales:', err);
+    }
+  };
+
+  // Obtener lista de niveles desde la API
+  const obtenerNiveles = async () => {
+    try {
+      const response = await fetch('http://localhost:6500/api/level'); // Ajusta esta ruta si es necesario
+      const resultado = await response.json();
+      console.log('Niveles cargados:', resultado);
+      if (resultado.success && resultado.data) {
+        setNiveles(resultado.data);
+      }
+    } catch (err) {
+      console.error('Error al cargar niveles:', err);
     }
   };
 
@@ -147,8 +150,8 @@ function EditarUsuario({ cedula, onNavigate }) {
             direccion: datosEstudiante.student_home_address || '',
             sexo: datosEstudiante.student_sex === 'M' ? 'Masculino' : 
                   datosEstudiante.student_sex === 'F' ? 'Femenino' : '',
-            nivel: obtenerNombreNivel(datosEstudiante.level_name),
-            nivelOriginal: datosEstudiante.level_name,
+            nivel: datosEstudiante.level_name || '', // Usar el nombre del nivel directamente
+            nivelId: datosEstudiante.student_level_id || '', // Guardar el ID del nivel
             profesor: datosEstudiante.teacher_first_name && datosEstudiante.teacher_first_lastname 
               ? `${datosEstudiante.teacher_first_name} ${datosEstudiante.teacher_first_lastname}`
               : '',
@@ -185,6 +188,7 @@ function EditarUsuario({ cedula, onNavigate }) {
     obtenerUsuario();
     obtenerProfesores();
     obtenerSucursales();
+    obtenerNiveles(); // Llamar a la función para cargar niveles
   }, [cedula]);
 
   const calcularEdad = (fechaNacimiento) => {
@@ -227,6 +231,13 @@ function EditarUsuario({ cedula, onNavigate }) {
     }
 
     try {
+      // Encontrar el nivel seleccionado para obtener su ID
+      const nivelSeleccionado = niveles.find(nivel => 
+        nivel.level_name === usuario.nivel || nivel.name === usuario.nivel
+      );
+      
+      const nivelId = nivelSeleccionado ? nivelSeleccionado.id_level || nivelSeleccionado.id : usuario.nivelId;
+
       // USAR EL ID DEL ESTUDIANTE EN LUGAR DE LA CÉDULA
       const response = await fetch(`http://localhost:6500/api/student/${studentId}`, {
         method: 'PUT',
@@ -244,11 +255,7 @@ function EditarUsuario({ cedula, onNavigate }) {
           student_home_address: usuario.direccion,
           student_sex: usuario.sexo === 'Masculino' ? 'M' : 'F',
           student_birthdate: usuario.fechaNacimiento,
-          // Asegúrate de que estos campos sean los correctos para tu API
-          student_level_id: usuario.nivel === 'Elemental' ? 1 : 
-                           usuario.nivel === 'Básico' ? 2 :
-                           usuario.nivel === 'Intermedio' ? 3 :
-                           usuario.nivel === 'Avanzado' ? 4 : 5,
+          student_level_id: nivelId, // Usar el ID del nivel
         })
       });
 
@@ -608,7 +615,7 @@ function EditarUsuario({ cedula, onNavigate }) {
           </>
         )}
 
-        {/* 🎓 Nivel de Formación */}
+        {/* 🎓 Nivel de Formación - CON NIVELES DESDE LA API */}
         <div className="bg-indigo-950 px-5 py-2 rounded-t-lg flex items-center justify-between">
           <h3 className="text-xl font-semibold text-white">Datos de Formación</h3>
         </div>
@@ -624,11 +631,14 @@ function EditarUsuario({ cedula, onNavigate }) {
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="">Seleccionar nivel</option>
-                <option value="Elemental">Elemental</option>
-                <option value="Básico">Básico</option>
-                <option value="Intermedio">Intermedio</option>
-                <option value="Avanzado">Avanzado</option>
-                <option value="Perfeccionamiento">Perfeccionamiento</option>
+                {niveles.map((nivel) => (
+                  <option 
+                    key={nivel.id_level || nivel.id} 
+                    value={nivel.level_name || nivel.name || nivel.nombre}
+                  >
+                    {nivel.level_name || nivel.name || nivel.nombre}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

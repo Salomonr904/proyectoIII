@@ -320,7 +320,7 @@ function RegistroUsuario({ cedula, onCancelar, onUsuarioCreado }) {
                       <option value="">Seleccionar Rol</option>
                       <option value="student">Estudiante</option>
                       <option value="teacher">Profesor</option>
-                      <option value="admin">Administrador</option>
+                      <option value="employee">empleado</option>
                     </select>
                     {errores.role && (
                       <p className="text-red-500 text-xs mt-1">{errores.role}</p>

@@ -87,7 +87,7 @@ function ConsultaUsuarios({ onVerUsuario }) {
     }
 
     return {
-      id: `estudiante-${estudiante.id_student}-${cedula}`,
+      id: `estudiante-${estudiante.id_student}`,
       cedula: cedula,
       nombre: nombre,
       telefono: telefono,
