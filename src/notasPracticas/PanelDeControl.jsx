@@ -35,13 +35,13 @@ function PanelDeControl({ onNavigate }) {
       {/* Panel de Control */}
       <aside className={`
         fixed lg:relative inset-y-0 left-0 z-40
-        w-72 bg-white text-gray-800 border-r border-gray-300
+        w-72 bg-gray-200 text-gray-800 border-r border-gray-300
         transform transition-transform duration-300 ease-in-out
         ${menuAbierto ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         flex flex-col h-screen
       `}>
         {/* Logo y Título */}
-        <div className="p-5 border-b border-gray-200">
+        <div className="p-5 border-b border-gray-500">
           <div className="flex items-center justify-center mb-3">
             <img
               src="/img/institutolearning.png"
@@ -81,7 +81,7 @@ function PanelDeControl({ onNavigate }) {
 </nav>
 
         {/* Footer */}
-        <div className="p-5 border-t border-gray-200">
+        <div className="p-5 border-t border-gray-500">
           <button className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full text-white bg-red-600 hover:bg-red-700 transition-colors font-semibold mb-3">
             ← Cerrar Sesión
           </button>

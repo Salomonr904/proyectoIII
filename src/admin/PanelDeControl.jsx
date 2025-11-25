@@ -174,12 +174,7 @@ function PanelDeControl({ onNavigate }) {
                 >
                   Nuevo Nivel
                 </button>
-                <button 
-                  onClick={() => seleccionarOpcion('nuevo-curso')}
-                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
-                >
-                  Nuevo Curso
-                </button>
+             
                 <button 
                   onClick={() => seleccionarOpcion('nueva-sucursal')}
                   className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"

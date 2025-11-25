@@ -92,15 +92,24 @@ function GestionUsuarios({ onVerRestablecer }) {
     setMostrarConfirmacion(true);
   };
 
-  // 🔄 Cambiar estado del usuario - SOLUCIÓN CORREGIDA
+  // 🔄 Cambiar estado del usuario - VERSIÓN MEJORADA CON MÁS DEBUGGING
   const cambiarEstado = async () => {
     if (!usuarioSeleccionado) return;
     
+    // Lógica corregida para cambio de estado
     const nuevoEstado = usuarioSeleccionado.estado === 'Activo' ? 'Deshabilitado' : 'Activo';
     const nuevoStatus = usuarioSeleccionado.estado === 'Activo' ? false : true;
 
+    console.log('🔄 CAMBIO DE ESTADO - INICIANDO:', {
+      usuario: usuarioSeleccionado.nombre,
+      cedula: usuarioSeleccionado.cedula,
+      estadoActual: usuarioSeleccionado.estado,
+      nuevoEstado,
+      nuevoStatus
+    });
+
     try {
-      // Usar siempre PUT para cambiar el estado, enviando el nuevo status en el body
+      // Hacer la petición PUT al backend
       const response = await fetch(`http://localhost:6500/api/users/${usuarioSeleccionado.cedula}`, {
         method: 'PUT',
         headers: {
@@ -111,28 +120,48 @@ function GestionUsuarios({ onVerRestablecer }) {
         })
       });
 
+      console.log('📡 RESPONSE STATUS:', response.status);
+      
       const resultado = await response.json();
+      console.log('📡 RESPUESTA DEL BACKEND:', resultado);
 
       if (!response.ok) {
-        console.error('Error del servidor:', resultado);
-        throw new Error(resultado.message || `Error al cambiar el estado del usuario`);
+        console.error('❌ Error del servidor:', resultado);
+        throw new Error(resultado.message || `Error ${response.status} al cambiar el estado del usuario`);
       }
 
-      // Actualizar el estado local si la llamada al backend fue exitosa
+      // VERIFICAR: ¿El backend realmente está cambiando el estado?
+      console.log('✅ Backend respondió exitosamente:', resultado);
+
+      // ACTUALIZAR EL ESTADO LOCAL INMEDIATAMENTE
       setUsuarios(prevUsuarios =>
         prevUsuarios.map(u =>
           u.id === usuarioSeleccionado.id
-            ? { ...u, estado: nuevoEstado }
+            ? { 
+                ...u, 
+                estado: nuevoEstado,
+                // Actualizar también los datos originales si es necesario
+                datosOriginales: {
+                  ...u.datosOriginales,
+                  status: nuevoStatus
+                }
+              }
             : u
         )
       );
+
+      console.log('✅ Estado local actualizado correctamente');
       
       // Mostrar mensaje de éxito
-      alert(`Usuario ${nuevoEstado === 'Activo' ? 'activado' : 'desactivado'} exitosamente`);
+      alert(`✅ Usuario ${nuevoEstado === 'Activo' ? 'activado' : 'desactivado'} exitosamente`);
       
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
-      alert(`Error al cambiar el estado del usuario: ${error.message}`);
+      console.error('❌ Error completo al cambiar estado:', error);
+      alert(`❌ Error al cambiar el estado del usuario: ${error.message}`);
+      
+      // Recargar los usuarios para sincronizar con el backend
+      console.log('🔄 Recargando usuarios para sincronizar...');
+      obtenerUsuarios();
     } finally {
       setMostrarConfirmacion(false);
       setUsuarioSeleccionado(null);
@@ -502,6 +531,13 @@ function GestionUsuarios({ onVerRestablecer }) {
                   usuarioSeleccionado.estado === 'Activo' ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {usuarioSeleccionado.estado}
+                </span>
+              </p>
+              <p className="text-gray-600 text-sm mt-1">
+                Nuevo estado: <span className={`font-medium ${
+                  usuarioSeleccionado.estado === 'Activo' ? 'text-red-600' : 'text-green-600'
+                }`}>
+                  {usuarioSeleccionado.estado === 'Activo' ? 'Deshabilitado' : 'Activo'}
                 </span>
               </p>
             </div>

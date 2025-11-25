@@ -17,6 +17,11 @@ function GestionCuotas({ onRegistrarCuota }) {
   const [filtroNivel, setFiltroNivel] = useState('Todos');
   const [mostrarFiltroNivel, setMostrarFiltroNivel] = useState(false);
   const [cargando, setCargando] = useState(false);
+  
+  // ✅ Nuevos estados para la edición
+  const [editando, setEditando] = useState(false);
+  const [cuotaEditando, setCuotaEditando] = useState(null);
+  const [cargandoEdicion, setCargandoEdicion] = useState(false);
 
   // 🔄 Cargar métodos de pago desde el backend
   useEffect(() => {
@@ -81,8 +86,11 @@ function GestionCuotas({ onRegistrarCuota }) {
             cedula: pago.student_cedula?.toString() || 'N/A',
             nombre: `${pago.student_first_name || ''} ${pago.student_first_lastname || ''}`.trim() || 'Estudiante',
             fecha: pago.payment_date ? new Date(pago.payment_date).toLocaleDateString('es-ES') : 'N/A',
+            fechaOriginal: pago.payment_date || '', // ✅ Guardar fecha original para edición
             metodo: pago.payment_method || 'N/A',
-            monto: `$${pago.amount}`,
+            metodoId: pago.method_id || '', // ✅ Guardar ID del método para edición
+            monto: pago.amount || 0,
+            montoFormateado: `$${pago.amount}`,
             nivel: 'Básico' // Placeholder
           }));
           
@@ -101,8 +109,11 @@ function GestionCuotas({ onRegistrarCuota }) {
             cedula: '30051443',
             nombre: 'Salomon Reyes',
             fecha: '07/11/2025',
+            fechaOriginal: '2025-11-07',
             metodo: 'pago movil',
-            monto: '$70.00',
+            metodoId: 1,
+            monto: 70.00,
+            montoFormateado: '$70.00',
             nivel: 'Básico'
           },
           {
@@ -110,8 +121,11 @@ function GestionCuotas({ onRegistrarCuota }) {
             cedula: '2554789',
             nombre: 'Salomon Reyes',
             fecha: '22/11/2025',
-            metodo: 'fdsjjsdks',
-            monto: '$50.00',
+            fechaOriginal: '2025-11-22',
+            metodo: 'transferencia',
+            metodoId: 2,
+            monto: 50.00,
+            montoFormateado: '$50.00',
             nivel: 'Intermedio'
           }
         ];
@@ -191,39 +205,112 @@ function GestionCuotas({ onRegistrarCuota }) {
     }
   };
 
-  // 🗑️ Función para eliminar cuota
-  const eliminarCuota = async (idCuota) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este pago?')) {
+  // ✏️ Función para iniciar edición de cuota
+  const iniciarEdicion = (cuota) => {
+    setEditando(true);
+    setCuotaEditando(cuota);
+    
+    // Llenar el formulario con los datos de la cuota seleccionada
+    setCedula(cuota.cedula);
+    setNombreApellido(cuota.nombre);
+    setMetodoPago(cuota.metodoId.toString());
+    setFechaPago(cuota.fechaOriginal);
+    setMonto(cuota.monto.toString());
+    setComentario(`Editando pago ID: ${cuota.id}`);
+  };
+
+  // 💾 Función para guardar cambios de edición
+  const guardarEdicion = async () => {
+    if (!cedula || !metodoPago || !fechaPago || !monto) {
+      alert('Por favor completa todos los campos obligatorios.');
       return;
     }
 
+    // Validar que el monto sea un número válido
+    const montoNumerico = parseFloat(monto);
+    if (isNaN(montoNumerico) || montoNumerico <= 0) {
+      alert('Por favor ingresa un monto válido.');
+      return;
+    }
+
+    // Validar que la cédula sea un número
+    const cedulaNumerica = parseInt(cedula);
+    if (isNaN(cedulaNumerica)) {
+      alert('La cédula debe ser un número válido.');
+      return;
+    }
+
+    setCargandoEdicion(true);
+
     try {
-      const response = await fetch(`http://localhost:6500/api/payments/${idCuota}`, {
-        method: 'DELETE',
+      // ✅ PREPARAR DATOS EN EL FORMATO EXACTO DEL BACKEND PARA ACTUALIZACIÓN
+      const datosPagoActualizado = {
+        cedula_student_id: cedulaNumerica,
+        amount: montoNumerico,
+        payment_date: fechaPago,
+        method_id: parseInt(metodoPago)
+      };
+
+      console.log('Datos enviados para actualización:', datosPagoActualizado);
+      console.log('ID del pago a actualizar:', cuotaEditando.id);
+
+      // Llamada PUT al backend para actualizar
+      const response = await fetch(`http://localhost:6500/api/payments/${cuotaEditando.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(datosPagoActualizado),
       });
 
       const resultado = await response.json();
-      console.log('Respuesta eliminación:', resultado);
+      console.log('Respuesta del backend (edición):', resultado);
 
       if (!response.ok) {
-        throw new Error(resultado.message || 'Error al eliminar pago');
+        throw new Error(resultado.message || 'Error en la respuesta del servidor');
       }
 
       if (!resultado.success) {
-        throw new Error(resultado.message || 'No se pudo eliminar el pago');
+        throw new Error(resultado.message || 'No se pudo actualizar el pago');
       }
 
-      // Eliminar localmente
-      setCuotas(prev => prev.filter(cuota => cuota.id !== idCuota));
-      alert('✅ Pago eliminado correctamente');
+      // Éxito - Actualizar localmente
+      const cuotasActualizadas = cuotas.map(cuota => 
+        cuota.id === cuotaEditando.id 
+          ? {
+              ...cuota,
+              cedula: cedula,
+              nombre: nombreApellido,
+              fecha: new Date(fechaPago).toLocaleDateString('es-ES'),
+              fechaOriginal: fechaPago,
+              metodo: metodosPago.find(m => m.id === parseInt(metodoPago))?.name || 'N/A',
+              metodoId: parseInt(metodoPago),
+              monto: montoNumerico,
+              montoFormateado: `$${montoNumerico}`
+            }
+          : cuota
+      );
+
+      setCuotas(cuotasActualizadas);
+      alert(`✅ Pago actualizado correctamente para ${nombreApellido}`);
+      cancelarEdicion();
       
     } catch (err) {
-      console.error('Error al eliminar cuota:', err);
-      alert(`❌ Error al eliminar pago: ${err.message}`);
+      console.error('Error al actualizar pago:', err);
+      alert(`❌ Error al actualizar pago: ${err.message}`);
+    } finally {
+      setCargandoEdicion(false);
     }
   };
 
-  // 🧹 Limpiar formulario después de registrar
+  // ❌ Función para cancelar edición
+  const cancelarEdicion = () => {
+    setEditando(false);
+    setCuotaEditando(null);
+    limpiarFormulario();
+  };
+
+  // 🧹 Limpiar formulario después de registrar o cancelar
   const limpiarFormulario = () => {
     setCedula('');
     setNombreApellido('');
@@ -269,22 +356,44 @@ function GestionCuotas({ onRegistrarCuota }) {
       {/* 🏷️ Header */}
       <div className="mb-6 md:mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-500 mb-2">
-          Registrar Cuota
+          {editando ? 'Editar Cuota' : 'Registrar Cuota'}
         </h1>
         <p className="text-sm text-gray-600">
-          Formato backend: {'{cedula_student_id, amount, payment_date, method_id}'}
+          {editando 
+            ? `Editando pago ID: ${cuotaEditando?.id}` 
+            : 'Formato backend: {cedula_student_id, amount, payment_date, method_id}'
+          }
         </p>
+        {editando && (
+          <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-700">
+              ⚠️ <strong>Modo edición:</strong> Estás editando el pago de {cuotaEditando?.nombre}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* 📝 Formulario de Registro */}
+      {/* 📝 Formulario de Registro/Edición */}
       <div className="bg-white rounded-lg p-6 mb-6 md:mb-8 border border-gray-200">
-        {/* Botón para cargar datos de ejemplo */}
-        <div className="flex justify-end mb-4">
+        {/* Botones de acción */}
+        <div className="flex justify-between mb-4">
+          <div>
+            {editando && (
+              <button
+                onClick={cancelarEdicion}
+                className="px-4 py-2 bg-gray-500 text-white text-sm rounded-full hover:bg-gray-600 transition-colors mr-2"
+                type="button"
+                disabled={cargando || cargandoEdicion}
+              >
+                Cancelar Edición
+              </button>
+            )}
+          </div>
           <button
             onClick={cargarDatosEjemplo}
             className="px-4 py-2 bg-amber-500 text-white text-sm rounded-full hover:bg-amber-600 transition-colors"
             type="button"
-            disabled={cargando}
+            disabled={cargando || cargandoEdicion || editando}
           >
             Cargar Datos Ejemplo
           </button>
@@ -303,7 +412,7 @@ function GestionCuotas({ onRegistrarCuota }) {
               onChange={(e) => setCedula(e.target.value)}
               placeholder="Ej: 28148594"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700 placeholder-gray-400"
-              disabled={cargando}
+              disabled={cargando || cargandoEdicion}
             />
           </div>
 
@@ -318,7 +427,7 @@ function GestionCuotas({ onRegistrarCuota }) {
               onChange={(e) => setNombreApellido(e.target.value)}
               placeholder="Nombre y apellido (solo referencia)"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700 placeholder-gray-400 bg-gray-50"
-              disabled={cargando}
+              disabled={cargando || cargandoEdicion}
             />
             <p className="text-xs text-gray-500 mt-1">No se envía al backend</p>
           </div>
@@ -332,7 +441,7 @@ function GestionCuotas({ onRegistrarCuota }) {
               value={metodoPago}
               onChange={(e) => setMetodoPago(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700"
-              disabled={cargando || metodosPago.length === 0}
+              disabled={cargando || cargandoEdicion || metodosPago.length === 0}
             >
               <option value="">Selecciona un método</option>
               {metodosPago.map((metodo) => (
@@ -362,7 +471,7 @@ function GestionCuotas({ onRegistrarCuota }) {
               value={fechaPago}
               onChange={(e) => setFechaPago(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700"
-              disabled={cargando}
+              disabled={cargando || cargandoEdicion}
             />
           </div>
 
@@ -379,7 +488,7 @@ function GestionCuotas({ onRegistrarCuota }) {
               onChange={(e) => setMonto(e.target.value)}
               placeholder="Ej: 50.00"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700 placeholder-gray-400"
-              disabled={cargando}
+              disabled={cargando || cargandoEdicion}
             />
           </div>
 
@@ -394,21 +503,31 @@ function GestionCuotas({ onRegistrarCuota }) {
               onChange={(e) => setComentario(e.target.value)}
               placeholder="Comentario interno"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 transition-colors duration-200 text-gray-700 placeholder-gray-400 bg-gray-50"
-              disabled={cargando}
+              disabled={cargando || cargandoEdicion}
             />
             <p className="text-xs text-gray-500 mt-1">Solo referencia interna</p>
           </div>
         </div>
 
-        {/* Botón Cargar */}
+        {/* Botón Cargar/Guardar */}
         <div className="flex justify-start">
-          <button
-            onClick={registrarCuota}
-            disabled={!cedula || !metodoPago || !fechaPago || !monto || cargando}
-            className="px-6 py-2 bg-indigo-950 text-white text-sm font-medium rounded-full hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {cargando ? 'Registrando...' : 'Cargar'}
-          </button>
+          {editando ? (
+            <button
+              onClick={guardarEdicion}
+              disabled={!cedula || !metodoPago || !fechaPago || !monto || cargandoEdicion}
+              className="px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {cargandoEdicion ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          ) : (
+            <button
+              onClick={registrarCuota}
+              disabled={!cedula || !metodoPago || !fechaPago || !monto || cargando}
+              className="px-6 py-2 bg-indigo-950 text-white text-sm font-medium rounded-full hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {cargando ? 'Registrando...' : 'Cargar'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -422,87 +541,6 @@ function GestionCuotas({ onRegistrarCuota }) {
           
           {/* Contenedor de Filtros y Búsqueda */}
           <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-            {/* 🎛️ Botones de Filtro */}
-            <div className="flex flex-wrap gap-2">
-              {/* Filtro Fecha */}
-              <div className="flex items-center gap-2">
-                <div className="flex flex-col">
-                  <label className="text-xs text-gray-500 mb-1">Mes</label>
-                  <input
-                    type="month"
-                    value={filtroFecha}
-                    onChange={(e) => setFiltroFecha(e.target.value)}
-                    className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950"
-                  />
-                </div>
-              </div>
-
-              {/* Botón Filtro Nivel */}
-              <div className="relative">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMostrarFiltroNivel(!mostrarFiltroNivel);
-                  }}
-                  className={`flex items-center px-7 py-2.5 border rounded-full text-sm font-medium transition-colors duration-200 ${
-                    filtroNivel !== 'Todos' 
-                      ? 'border-indigo-500 text-indigo-700 bg-indigo-50' 
-                      : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="mr-1"></span>
-                  Nivel: {filtroNivel}
-                </button>
-                
-                {mostrarFiltroNivel && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    <div className="p-2">
-                      <button
-                        onClick={() => setFiltroNivel('Todos')}
-                        className={`block w-full text-left px-3 py-2 text-sm rounded-md mb-1 ${
-                          filtroNivel === 'Todos' 
-                            ? 'bg-indigo-100 text-indigo-700' 
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Todos
-                      </button>
-                      <button
-                        onClick={() => setFiltroNivel('Básico')}
-                        className={`block w-full text-left px-3 py-2 text-sm rounded-md mb-1 ${
-                          filtroNivel === 'Básico' 
-                            ? 'bg-indigo-100 text-indigo-700' 
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Básico
-                      </button>
-                      <button
-                        onClick={() => setFiltroNivel('Intermedio')}
-                        className={`block w-full text-left px-3 py-2 text-sm rounded-md mb-1 ${
-                          filtroNivel === 'Intermedio' 
-                            ? 'bg-indigo-100 text-indigo-700' 
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Intermedio
-                      </button>
-                      <button
-                        onClick={() => setFiltroNivel('Avanzado')}
-                        className={`block w-full text-left px-3 py-2 text-sm rounded-md ${
-                          filtroNivel === 'Avanzado' 
-                            ? 'bg-indigo-100 text-indigo-700' 
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Avanzado
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* 🔍 Barra de búsqueda */}
             <div className="w-full md:w-64">
               <input
@@ -550,9 +588,6 @@ function GestionCuotas({ onRegistrarCuota }) {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                       Editar
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                      Eliminar
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -571,19 +606,15 @@ function GestionCuotas({ onRegistrarCuota }) {
                         <div className="text-sm text-gray-700">{cuota.metodo}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{cuota.monto}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 transition-colors duration-200">
-                          <span className="text-lg">✏️</span>
-                        </button>
+                        <div className="text-sm font-medium text-gray-900">{cuota.montoFormateado}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button 
-                          onClick={() => eliminarCuota(cuota.id)}
-                          className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                          onClick={() => iniciarEdicion(cuota)}
+                          disabled={editando}
+                          className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <span className="text-lg">🗑️</span>
+                          <span className="text-lg">✏️</span>
                         </button>
                       </td>
                     </tr>
@@ -613,23 +644,19 @@ function GestionCuotas({ onRegistrarCuota }) {
                           <span className="font-medium">Nivel:</span> {cuota.nivel}
                         </p>
                         <p className="text-gray-600 text-sm">
-                          <span className="font-medium">Monto:</span> {cuota.monto}
+                          <span className="font-medium">Monto:</span> {cuota.montoFormateado}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex justify-between items-center">
-                      <button className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-800 transition-colors duration-200">
+                      <button 
+                        onClick={() => iniciarEdicion(cuota)}
+                        disabled={editando}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-600 hover:text-green-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <span className="text-lg mr-2">✏️</span>
                         Editar
-                      </button>
-                      
-                      <button 
-                        onClick={() => eliminarCuota(cuota.id)}
-                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-red-600 transition-colors duration-200"
-                      >
-                        <span className="text-lg mr-2">🗑️</span>
-                        Eliminar
                       </button>
                     </div>
                   </div>

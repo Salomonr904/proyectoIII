@@ -7,19 +7,213 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
   const [editandoIndex, setEditandoIndex] = useState(null);
   const [formTemp, setFormTemp] = useState({});
   const [vista, setVista] = useState('detalle');
-  const [evaluacionAEliminar, setEvaluacionAEliminar] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [profesor, setProfesor] = useState(null);
+  const [loadingProfesor, setLoadingProfesor] = useState(false);
 
-  // Cargar evaluaciones del estudiante
+  // Función para calcular ponderación automáticamente (nota/20 * 100)
+  const calcularPonderacion = (nota) => {
+    const notaNum = parseFloat(nota) || 0;
+    return Math.round((notaNum / 20) * 100);
+  };
+
+  // Cargar información del profesor desde la API
   useEffect(() => {
-    if (estudiante?.evaluaciones) {
-      setEvaluaciones(estudiante.evaluaciones);
+    const cargarProfesor = async () => {
+      const cedulaProfesor = estudiante?.datosCompletos?.student_cedula_teacher_id;
+      
+      if (!cedulaProfesor) {
+        console.log('❌ No se encontró cédula del profesor en los datos del estudiante');
+        setProfesor(null);
+        return;
+      }
+
+      try {
+        setLoadingProfesor(true);
+        console.log(`🔄 Cargando información del profesor con cédula: ${cedulaProfesor}`);
+        
+        const response = await fetch('http://localhost:6500/api/teachers', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const resultado = await response.json();
+          console.log('✅ Lista de profesores cargada:', resultado);
+          
+          if (resultado.success && resultado.data) {
+            const profesorEncontrado = resultado.data.find(
+              prof => prof.teacher_cedula == cedulaProfesor
+            );
+            
+            if (profesorEncontrado) {
+              console.log('✅ Profesor encontrado:', profesorEncontrado);
+              setProfesor(profesorEncontrado);
+            } else {
+              console.log('❌ No se encontró el profesor con cédula:', cedulaProfesor);
+              setProfesor(null);
+            }
+          } else {
+            console.log('❌ No hay datos de profesores');
+            setProfesor(null);
+          }
+        } else {
+          console.log(`❌ Error al cargar profesores: ${response.status}`);
+          setProfesor(null);
+        }
+      } catch (error) {
+        console.error('❌ Error cargando profesor:', error);
+        setProfesor(null);
+      } finally {
+        setLoadingProfesor(false);
+      }
+    };
+
+    if (estudiante?.datosCompletos?.student_cedula_teacher_id) {
+      cargarProfesor();
+    } else {
+      setProfesor(null);
     }
   }, [estudiante]);
 
+  // Cargar evaluaciones del estudiante desde la API
+  useEffect(() => {
+    const cargarEvaluaciones = async () => {
+      if (!estudiante?.cedula) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        console.log(`🔄 Cargando evaluaciones para: ${estudiante.cedula}`);
+        
+        const response = await fetch(`http://localhost:6500/api/evaluations/${estudiante.cedula}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const resultado = await response.json();
+          console.log('✅ Evaluaciones cargadas:', resultado);
+          
+          if (resultado.success && resultado.data) {
+            const evaluacionesTransformadas = resultado.data.map((itemEvaluacion, index) => {
+              const nota = parseFloat(itemEvaluacion.score) || 0;
+              const ponderacionCalculada = calcularPonderacion(nota);
+              
+              return {
+                id: itemEvaluacion.id_evaluation || `evaluacion-${Date.now()}-${index}`,
+                id_evaluation: itemEvaluacion.id_evaluation,
+                nombre: itemEvaluacion.type_evaluation || 'Evaluación',
+                descripcion: itemEvaluacion.evaluation_description || 'Sin descripción',
+                ponderacion: ponderacionCalculada,
+                nota: nota,
+                fecha: itemEvaluacion.evaluation_date || new Date().toISOString(),
+                estado: 'Completado',
+                datosOriginales: itemEvaluacion
+              };
+            });
+            
+            setEvaluaciones(evaluacionesTransformadas);
+            if (onActualizarEvaluaciones) {
+              onActualizarEvaluaciones(evaluacionesTransformadas);
+            }
+          } else {
+            console.log('❌ No hay evaluaciones para este estudiante');
+            setEvaluaciones([]);
+          }
+        } else {
+          console.log(`❌ Error al cargar evaluaciones: ${response.status}`);
+          setEvaluaciones([]);
+        }
+      } catch (error) {
+        console.error('❌ Error cargando evaluaciones:', error);
+        setEvaluaciones([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarEvaluaciones();
+  }, [estudiante?.cedula]);
+
+  // Función para actualizar evaluación en la API
+  const actualizarEvaluacionAPI = async (evaluacionId, datosActualizados) => {
+    try {
+      setGuardando(true);
+      console.log('📤 Actualizando evaluación:', { evaluacionId, datosActualizados });
+
+      // Obtener los datos originales de la evaluación
+      const evaluacionOriginal = evaluaciones.find(evaluacionItem => evaluacionItem.id_evaluation === evaluacionId);
+      
+      if (!evaluacionOriginal) {
+        throw new Error('No se encontró la evaluación original');
+      }
+
+      // Obtener type_evaluation_id de los datos originales
+      const typeEvaluationId = evaluacionOriginal.datosOriginales?.type_evaluation_id || 1;
+
+      // Preparar los datos en el formato exacto que espera el backend
+      const datosParaAPI = {
+        cedula_student_id: parseInt(estudiante.cedula),
+        cedula_teacher_id: parseInt(estudiante.datosCompletos?.student_cedula_teacher_id || 0),
+        level_id: parseInt(estudiante.nivel) || 1,
+        type_evaluation_id: typeEvaluationId,
+        score: parseFloat(datosActualizados.nota) || 0
+      };
+
+      console.log('📤 Datos enviados a API:', datosParaAPI);
+
+      const response = await fetch(`http://localhost:6500/api/evaluations/${evaluacionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(datosParaAPI)
+      });
+
+      const responseData = await response.json();
+      console.log('📥 Respuesta del servidor:', responseData);
+
+      if (response.ok) {
+        console.log('✅ Evaluación actualizada exitosamente');
+        return { success: true, data: responseData };
+      } else {
+        console.error('❌ Error del servidor:', responseData);
+        return { 
+          success: false, 
+          error: responseData.message || 'Error del servidor',
+          details: responseData
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error en la petición de actualización:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Error de conexión'
+      };
+    } finally {
+      setGuardando(false);
+    }
+  };
+
   // Calcular promedio
   const promedio = useMemo(() => {
-    const totalPonderacion = evaluaciones.reduce((acc, item) => acc + item.ponderacion, 0);
-    const totalAportado = evaluaciones.reduce((acc, item) => acc + ((item.nota * item.ponderacion) / 20), 0);
+    if (evaluaciones.length === 0) return 0;
+    
+    const totalPonderacion = evaluaciones.reduce((acc, item) => acc + (item.ponderacion || 0), 0);
+    const totalAportado = evaluaciones.reduce((acc, item) => {
+      const nota = item.nota || 0;
+      const ponderacion = item.ponderacion || 0;
+      return acc + ((nota * ponderacion) / 20);
+    }, 0);
+    
     return totalPonderacion > 0 ? Math.round((totalAportado / totalPonderacion) * 100) : 0;
   }, [evaluaciones]);
 
@@ -41,116 +235,177 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
     return 'Deficiente';
   }, [promedio]);
 
-  // Eliminar evaluación con confirmación
-  const eliminarEvaluacion = (index) => {
-    if (evaluacionAEliminar === null) return;
-    
-    const nuevas = [...evaluaciones];
-    nuevas.splice(index, 1);
-    setEvaluaciones(nuevas);
-    onActualizarEvaluaciones(nuevas);
-    setEvaluacionAEliminar(null);
-  };
-
   // Iniciar edición de evaluación
   const iniciarEdicion = (index) => {
+    console.log('✏️ Iniciando edición de evaluación:', evaluaciones[index]);
     setEditandoIndex(index);
-    setFormTemp({ ...evaluaciones[index] });
+    setFormTemp({ 
+      ...evaluaciones[index],
+      descripcion: evaluaciones[index].descripcion || '',
+      nota: evaluaciones[index].nota || 0
+    });
   };
 
   // Cancelar edición
   const cancelarEdicion = () => {
+    console.log('❌ Cancelando edición');
     setEditandoIndex(null);
     setFormTemp({});
   };
 
   // Guardar edición
-  const guardarEdicion = (index) => {
-    const actualizadas = [...evaluaciones];
-    actualizadas[index] = {
-      ...formTemp,
-      ponderacion: parseInt(formTemp.ponderacion),
-      nota: parseInt(formTemp.nota),
+  const guardarEdicion = async (index) => {
+    console.log('💾 Guardando edición para índice:', index);
+    
+    // Validaciones básicas
+    if (!formTemp.nota && formTemp.nota !== 0) {
+      alert('Por favor, ingresa una nota válida');
+      return;
+    }
+
+    const nota = parseFloat(formTemp.nota) || 0;
+    if (nota < 0 || nota > 20) {
+      alert('La nota debe estar entre 0 y 20');
+      return;
+    }
+
+    const ponderacionCalculada = calcularPonderacion(nota);
+    
+    // Preparar datos actualizados
+    const datosActualizados = {
+      ...evaluaciones[index],
+      descripcion: formTemp.descripcion || '',
+      nota: nota,
+      ponderacion: ponderacionCalculada,
     };
-    setEvaluaciones(actualizadas);
-    onActualizarEvaluaciones(actualizadas);
+
+    console.log('📝 Datos actualizados:', datosActualizados);
+
+    const evaluacionOriginal = evaluaciones[index];
+    
+    // Si tiene ID real (de la base de datos), actualizar en la API
+    if (evaluacionOriginal.id_evaluation) {
+      console.log('🔄 Actualizando evaluación en API...');
+      const resultado = await actualizarEvaluacionAPI(evaluacionOriginal.id_evaluation, datosActualizados);
+      
+      if (!resultado.success) {
+        alert(`❌ Error al actualizar la evaluación: ${resultado.error}`);
+        console.error('Detalles del error:', resultado.details);
+        return;
+      }
+      
+      // Recargar las evaluaciones desde el servidor
+      console.log('🔄 Recargando evaluaciones desde servidor...');
+      const response = await fetch(`http://localhost:6500/api/evaluations/${estudiante.cedula}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const resultado = await response.json();
+        if (resultado.success && resultado.data) {
+          const evaluacionesActualizadas = resultado.data.map((itemEvaluacion, idx) => {
+            const nota = parseFloat(itemEvaluacion.score) || 0;
+            const ponderacionCalculada = calcularPonderacion(nota);
+            
+            return {
+              id: itemEvaluacion.id_evaluation || `evaluacion-${Date.now()}-${idx}`,
+              id_evaluation: itemEvaluacion.id_evaluation,
+              nombre: itemEvaluacion.type_evaluation || 'Evaluación',
+              descripcion: itemEvaluacion.evaluation_description || 'Sin descripción',
+              ponderacion: ponderacionCalculada,
+              nota: nota,
+              fecha: itemEvaluacion.evaluation_date || new Date().toISOString(),
+              estado: 'Completado',
+              datosOriginales: itemEvaluacion
+            };
+          });
+          
+          setEvaluaciones(evaluacionesActualizadas);
+          if (onActualizarEvaluaciones) {
+            onActualizarEvaluaciones(evaluacionesActualizadas);
+          }
+        }
+      }
+    } else {
+      // Si es una evaluación temporal, solo actualizar el estado local
+      const actualizadas = [...evaluaciones];
+      actualizadas[index] = datosActualizados;
+      setEvaluaciones(actualizadas);
+      if (onActualizarEvaluaciones) {
+        onActualizarEvaluaciones(actualizadas);
+      }
+    }
+    
     cancelarEdicion();
+    alert('✅ Evaluación actualizada exitosamente');
   };
 
   // Manejar cambios en el formulario temporal
   const handleChange = (e) => {
-    setFormTemp({ ...formTemp, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    console.log(`📝 Cambio en campo ${name}:`, value);
+    
+    const nuevosDatos = { ...formTemp, [name]: value };
+    
+    // Si cambia la nota, recalcular automáticamente la ponderación
+    if (name === 'nota') {
+      const nota = parseFloat(value) || 0;
+      nuevosDatos.ponderacion = calcularPonderacion(nota);
+      console.log(`🔢 Ponderación recalculada: ${nota}/20 = ${nuevosDatos.ponderacion}%`);
+    }
+    
+    setFormTemp(nuevosDatos);
   };
 
   // Agregar nueva evaluación
   const agregarEvaluacion = (nueva) => {
-    const actualizadas = [...evaluaciones, nueva];
+    const nota = nueva.nota || 0;
+    const ponderacionCalculada = calcularPonderacion(nota);
+    
+    const evaluacionConPonderacion = {
+      ...nueva,
+      ponderacion: ponderacionCalculada
+    };
+    
+    const actualizadas = [...evaluaciones, evaluacionConPonderacion];
     setEvaluaciones(actualizadas);
-    onActualizarEvaluaciones(actualizadas);
+    if (onActualizarEvaluaciones) {
+      onActualizarEvaluaciones(actualizadas);
+    }
     setVista('detalle');
   };
 
-  // Datos de evaluación simulados basados en la imagen
-  const evaluacionesSimuladas = useMemo(() => [
-    {
-      nombre: 'Interrogative',
-      descripcion: 'Preguntas escritas/orales sobre gramática y vocabulario.',
-      ponderacion: 10,
-      nota: 8,
-      estado: 'Completado'
-    },
-    {
-      nombre: 'Presentation',
-      descripcion: 'Exposición individual o grupal sobre un tema en inglés.',
-      ponderacion: 15,
-      nota: 12,
-      estado: 'Completado'
-    },
-    {
-      nombre: 'Speaking Quiz',
-      descripcion: 'Evaluación oral de fluidez, pronunciación y vocabulario.',
-      ponderacion: 20,
-      nota: 16,
-      estado: 'Completado'
-    },
-    {
-      nombre: 'Test',
-      descripcion: 'Examen escrito de comprensión lectora y gramática.',
-      ponderacion: 20,
-      nota: 17,
-      estado: 'Completado'
-    },
-    {
-      nombre: 'Listening Test',
-      descripcion: 'Prueba de comprensión auditiva a través de audios en inglés.',
-      ponderacion: 10,
-      nota: 8,
-      estado: 'Completado'
-    },
-    {
-      nombre: 'Speaking Test',
-      descripcion: 'Evaluación oral formal (entrevista, diálogo o role-play).',
-      ponderacion: 20,
-      nota: 16,
-      estado: 'Completado'
-    },
-    {
-      nombre: 'Assistance',
-      descripcion: 'Asistencia regular, participación en clase y puntualidad.',
-      ponderacion: 5,
-      nota: 5,
-      estado: 'Completado'
+  // Función para obtener el nombre del profesor
+  const obtenerNombreProfesor = () => {
+    if (profesor) {
+      const { 
+        teacher_first_name, 
+        teacher_second_name, 
+        teacher_first_lastname, 
+        teacher_second_lastname 
+      } = profesor;
+      
+      let nombreCompleto = '';
+      
+      if (teacher_first_name) nombreCompleto += teacher_first_name;
+      if (teacher_second_name) nombreCompleto += ` ${teacher_second_name}`;
+      if (teacher_first_lastname) nombreCompleto += ` ${teacher_first_lastname}`;
+      if (teacher_second_lastname) nombreCompleto += ` ${teacher_second_lastname}`;
+      
+      return nombreCompleto.trim() || 'Profesor no disponible';
     }
-  ], []);
-
-  // Cargar datos simulados si no hay evaluaciones
-  useEffect(() => {
-    if (evaluaciones.length === 0 && estudiante) {
-      setEvaluaciones(evaluacionesSimuladas);
+    
+    if (estudiante?.datosCompletos?.student_cedula_teacher_id) {
+      return `Profesor ID: ${estudiante.datosCompletos.student_cedula_teacher_id}`;
     }
-  }, [evaluaciones.length, estudiante, evaluacionesSimuladas]);
+    
+    return 'No asignado';
+  };
 
-  //  Navegación a otras vistas
+  // Navegación a otras vistas
   if (vista === 'evaluar') {
     return (
       <CargarEvaluacion
@@ -172,7 +427,7 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
 
   return (
     <div className="min-h-screen p-4 md:p-6">
-      {/*  Header de la página */}
+      {/* Header de la página */}
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
@@ -185,14 +440,15 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
         
         <button
           onClick={onVolver}
-          className="flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-full text-white bg-blue-500 hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
+          disabled={guardando}
+          className="flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-full text-white bg-blue-500 hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="mr-2">←</span>
           Atrás
         </button>
       </div>
 
-      {/*  Información del estudiante */}
+      {/* Información del estudiante */}
       {estudiante && (
         <div className="bg-gray-50 rounded-lg shadow-sm p-4 md:p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Estudiante</h2>
@@ -210,8 +466,24 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
               <p className="text-gray-900 font-medium">{estudiante.nivel}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Curso</label>
-              <p className="text-gray-900 font-medium">{estudiante.curso}</p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Profesor</label>
+              <div className="text-gray-900 font-medium">
+                {loadingProfesor ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-950 mr-2"></div>
+                    Cargando...
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    <span>{obtenerNombreProfesor()}</span>
+                    {profesor && (
+                      <span className="text-xs text-gray-500 mt-1">
+                        Cédula: {profesor.teacher_cedula}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -219,21 +491,31 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
           <div className="flex flex-wrap gap-3 mt-6">
             <button
               onClick={() => setVista('historial')}
-              className="inline-flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-full text-white bg-blue-500 hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
+              disabled={guardando}
+              className="inline-flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-full text-white bg-blue-500 hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Histórico
             </button>
             <button
               onClick={() => setVista('evaluar')}
-              className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-blue-500 hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
+              disabled={guardando}
+              className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-full text-white bg-blue-500 hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-            Evaluar
+              Evaluar
             </button>
           </div>
         </div>
       )}
 
-      {/*  Tabla de evaluaciones */}
+      {/* Indicador de carga global */}
+      {guardando && (
+        <div className="fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          Guardando cambios...
+        </div>
+      )}
+
+      {/* Tabla de evaluaciones */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -246,115 +528,150 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
                   Descripción
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  Ponderación
+                  Nota Obtenida
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  Nota Obtenida
+                  Ponderación Calculada
                 </th>
                 <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
                   Editar
                 </th>
-                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
-                  Eliminar
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {evaluaciones.map((evaluacion, index) => (
-                <tr key={index} className="hover:bg-gray-50 transition-colors duration-150">
-                  {editandoIndex === index ? (
-                    // Modo edición
-                    <>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          name="nombre"
-                          value={formTemp.nombre || ''}
-                          onChange={handleChange}
-                          className="w-full px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 text-gray-700"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <input
-                          name="descripcion"
-                          value={formTemp.descripcion || ''}
-                          onChange={handleChange}
-                          className="w-full px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 text-gray-700"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          name="ponderacion"
-                          type="number"
-                          value={formTemp.ponderacion || ''}
-                          onChange={handleChange}
-                          className="w-20 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 text-gray-700"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          name="nota"
-                          type="number"
-                          value={formTemp.nota || ''}
-                          onChange={handleChange}
-                          className="w-20 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 text-gray-700"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={() => guardarEdicion(index)}
-                          className="inline-flex items-center p-2 border border-green-300 rounded-lg text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200"
-                          title="Guardar cambios"
-                        >
-                          <span className="text-lg">💾</span>
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={cancelarEdicion}
-                          className="inline-flex items-center p-2 border border-red-300 rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
-                          title="Cancelar edición"
-                        >
-                          <span className="text-lg">❌</span>
-                        </button>
-                      </td>
-                    </>
-                  ) : (
-                    // Modo visualización
-                    <>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{evaluacion.nombre}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-700 max-w-xs">{evaluacion.descripcion}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-700">{evaluacion.ponderacion}%</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{evaluacion.nota}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={() => iniciarEdicion(index)}
-                          className="inline-flex items-center p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
-                          title="Editar evaluación"
-                        >
-                          <span className="text-lg">✏️</span>
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={() => setEvaluacionAEliminar(index)}
-                          className="inline-flex items-center p-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
-                          title="Eliminar evaluación"
-                        >
-                          <span className="text-lg">🗑️</span>
-                        </button>
-                      </td>
-                    </>
-                  )}
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center">
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-950"></div>
+                      <span className="ml-3 text-gray-600">Cargando evaluaciones...</span>
+                    </div>
+                  </td>
                 </tr>
-              ))}
+              ) : evaluaciones.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center">
+                    <div className="text-gray-400 text-6xl mb-4">📭</div>
+                    <p className="text-gray-500 text-lg font-medium">No hay evaluaciones</p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Este estudiante no tiene evaluaciones registradas
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                evaluaciones.map((evaluacion, index) => (
+                  <tr 
+                    key={`${evaluacion.id_evaluation || evaluacion.id}-${index}`}
+                    className="hover:bg-gray-50 transition-colors duration-150"
+                  >
+                    {editandoIndex === index ? (
+                      // Modo edición
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900 bg-gray-100 px-3 py-2 rounded border">
+                            {evaluacion.nombre}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            (Tipo de evaluación no editable)
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <input
+                            name="descripcion"
+                            value={formTemp.descripcion || ''}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 text-gray-700"
+                            disabled={guardando}
+                            placeholder="Descripción de la evaluación..."
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            name="nota"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="20"
+                            value={formTemp.nota || ''}
+                            onChange={handleChange}
+                            className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-950 focus:border-indigo-950 text-gray-700"
+                            disabled={guardando}
+                          />
+                          <div className="text-xs text-gray-500 mt-1">
+                            Rango: 0 - 20
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-700 font-medium">
+                            {formTemp.ponderacion}%
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            (Calculado automáticamente)
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <div className="flex justify-center space-x-2">
+                            <button
+                              onClick={() => guardarEdicion(index)}
+                              disabled={guardando}
+                              className="inline-flex items-center px-3 py-2 border border-green-300 rounded-lg text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Guardar cambios"
+                            >
+                              {guardando ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                              ) : (
+                                <>
+                                  <span className="text-lg mr-1">💾</span>
+                                  <span>Guardar</span>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={cancelarEdicion}
+                              disabled={guardando}
+                              className="inline-flex items-center px-3 py-2 border border-red-300 rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Cancelar edición"
+                            >
+                              <span className="text-lg mr-1">❌</span>
+                              <span>Cancelar</span>
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      // Modo visualización
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{evaluacion.nombre}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-700 max-w-xs">{evaluacion.descripcion}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{evaluacion.nota}/20</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-700 font-medium">{evaluacion.ponderacion}%</div>
+                          <div className="text-xs text-gray-500">
+                            ({evaluacion.nota}/20 = {evaluacion.ponderacion}%)
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <button
+                            onClick={() => iniciarEdicion(index)}
+                            disabled={guardando}
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Editar evaluación"
+                          >
+                            <span className="text-lg mr-2">✏️</span>
+                            <span>Editar</span>
+                          </button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -370,6 +687,9 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
               <p className="text-3xl font-bold text-gray-800">{promedio}%</p>
               <p className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-2 ${getColorPromedio(promedio)}`}>
                 {textoPromedio}
+              </p>
+              <p className="text-gray-600 text-sm mt-2">
+                Basado en {evaluaciones.length} evaluación(es)
               </p>
             </div>
             <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center border-4 border-gray-200">
@@ -401,44 +721,9 @@ function DetalleNotas({ estudiante, onVolver, onActualizarEvaluaciones }) {
           </div>
         </div>
       </div>
-
-      {/* Modal de confirmación de eliminación */}
-      {evaluacionAEliminar !== null && (
-        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Confirmar eliminación
-            </h3>
-            
-            <p className="text-gray-600 mb-2">
-              ¿Estás seguro de que deseas eliminar la siguiente evaluación?
-            </p>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="font-medium text-gray-800">{evaluaciones[evaluacionAEliminar]?.nombre}</p>
-              <p className="text-gray-600 text-sm">Nota: {evaluaciones[evaluacionAEliminar]?.nota}</p>
-              <p className="text-gray-600 text-sm">Ponderación: {evaluaciones[evaluacionAEliminar]?.ponderacion}%</p>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setEvaluacionAEliminar(null)}
-                className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-950 focus:ring-offset-2 transition-colors duration-200"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => eliminarEvaluacion(evaluacionAEliminar)}
-                className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 export default DetalleNotas;
+
