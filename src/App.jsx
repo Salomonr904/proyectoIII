@@ -7,6 +7,7 @@ import LoadingScreen from './components/LoadingScreen';
 import AdminPanel from './pages/AdminPanel';
 import EstudiantePanel from './pages/EstudiantePanel';
 import ProtectedAdmin from "./components/proteccionAdmin.jsx";
+import ProtectedRouteEsudiante from './components/proteccionEstudiante.jsx'
 
 function App() {
   return (
@@ -26,14 +27,14 @@ function App() {
         }
       />
 
-      {/*<Route
+      <Route
         path="/estudiante-panel"
         element={
-          <ProtectedRoute>
+          <ProtectedRouteEsudiante>
             <EstudiantePanel/>
-          </ProtectedRoute>
+          </ProtectedRouteEsudiante>
         }
-      />*/}
+      />
 
 
       {/* Pantallas de carga */}
