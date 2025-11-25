@@ -31,10 +31,14 @@ function DetalleUsuario({ cedula, onNavigate }) {
         setError(null);
         
         console.log('Buscando usuario con cédula:', cedula);
+
+        console.log(cedula)
         
         // Hacer la llamada a la API para obtener los datos del estudiante
         const response = await fetch(`http://localhost:6500/api/student`, {
           method: 'POST',
+          credentials: "include",
+          mode: "cors",
           headers: {
             'Content-Type': 'application/json',
           },

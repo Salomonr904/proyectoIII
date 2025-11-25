@@ -1,34 +1,55 @@
 import React, { useEffect, useState } from 'react';
 
-function EditarUsuario({ cedula, onNavigate }) {
-  const [usuario, setUsuario] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
+function EditarUsuario({ cedula }) {
   const [profesores, setProfesores] = useState([]);
   const [sucursales, setSucursales] = useState([]);
-  const [studentId, setStudentId] = useState(null); // Nuevo estado para el ID del estudiante
+  const [niveles, setNiveles] = useState([]);
+  const [estudiantes, setEstudiantes] = useState({});
+  const [messageTeacherError, setMessageTeacherError] = useState('');
+  const [messageBranchesError, setMessageBranchesError] = useState('');
+  const [messageLevelsError, setMessageLevelsError] = useState('');
+  const [messageStudentError, setMessageStudentError] = useState('');
 
-  // Función para obtener el nombre del nivel en español
-  const obtenerNombreNivel = (levelName) => {
-    const niveles = {
-      'elementary': 'Elemental',
-      'basic': 'Básico', 
-      'intermediate': 'Intermedio',
-      'advanced': 'Avanzado',
-      'proficiency': 'Perfeccionamiento'
-    };
-    return niveles[levelName] || levelName || 'No asignado';
-  };
+
+  const [id_student, setId_student] = useState('');
+  const [student_cedula, setStudent_cedula] = useState('');
+  const [student_first_name, setStudent_first_name] = useState('');
+  const [student_second_name, setStudent_second_name] = useState('');
+  const [student_first_lastname, setStudent_first_lastname] = useState('');
+  const [student_second_lastname, setStudent_second_lastname] = useState('');
+  const [student_email, setStudent_email] = useState('');
+  const [student_telephone, setStudent_telephone] = useState('');
+  const [student_emergency_telephone, setStudent_emergency_telephone] = useState('');
+  const [student_sex, setStudent_sex] = useState('');
+  const [student_birthdate, setStudent_birthdate] = useState('');
+  const [student_home_address, setStudent_home_address] = useState('');
+  const [student_cedula_guardians_id, setStudent_cedula_guardians_id] = useState('');
+  const [student_level_id, setStudent_level_id] = useState('');
+  const [student_branch_id, setStudent_branch_id] = useState('');
+  const [student_cedula_teacher_id, setStudent_cedula_teacher_id] = useState('');
+
+
+  const [messageSuccesUpdate, setMessageSuccesUpdate] = useState('');
+  const [messageErroUpdate, setMessageErroUpdate] = useState('');
+
 
   // Obtener lista de profesores
   const obtenerProfesores = async () => {
     try {
-      const response = await fetch('http://localhost:6500/api/teachers');
-      const resultado = await response.json();
-      console.log('Profesores cargados:', resultado);
-      if (resultado.success && resultado.data) {
-        setProfesores(resultado.data);
+
+      const res = await fetch("http://localhost:6500/api/teachers", {
+        method: "GET",
+        credentials: 'include',
+      })
+
+      const response = await res.json();
+
+      if (!response.success) {
+        setMessageTeacherError(response.message);
+        return;
       }
+
+      setProfesores(response.data);
     } catch (err) {
       console.error('Error al cargar profesores:', err);
     }
@@ -37,295 +58,192 @@ function EditarUsuario({ cedula, onNavigate }) {
   // Obtener lista de sucursales
   const obtenerSucursales = async () => {
     try {
-      const response = await fetch('http://localhost:6500/api/branches');
+      const response = await fetch('http://localhost:6500/api/branches', {
+        method: "GET",
+        credentials: 'include',
+      });
+
       const resultado = await response.json();
-      console.log('Sucursales cargadas:', resultado);
-      if (resultado.success && resultado.data) {
-        const sucursalesMapeadas = resultado.data.map(sucursal => ({
-          id_branch: sucursal.id_branch,
-          branch_name: sucursal.branch
-        }));
-        setSucursales(sucursalesMapeadas);
+
+      if (!resultado.success) {
+        setMessageBranchesError(resultado.message);
+        return;
       }
+
+      setSucursales(resultado.data);
     } catch (err) {
       console.error('Error al cargar sucursales:', err);
     }
   };
 
-  // Obtener datos completos del representante
-  const obtenerDatosRepresentante = async (cedulaRepresentante) => {
-    if (!cedulaRepresentante) return null;
-    
+  // Obtener lista de niveles desde la API
+  const obtenerNiveles = async () => {
     try {
-      const response = await fetch('http://localhost:6500/api/guardian', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          guardianCedula: parseInt(cedulaRepresentante)
-        })
+      const response = await fetch('http://localhost:6500/api/level', {
+        method: "GET",
+        credentials: 'include',
       });
-
       const resultado = await response.json();
-      console.log('Datos del representante:', resultado);
-      
-      if (resultado.success && resultado.data && resultado.data.length > 0) {
-        return resultado.data[0];
-      }
-      return null;
-    } catch (err) {
-      console.error('Error al obtener datos del representante:', err);
-      return null;
-    }
-  };
 
-  // Obtener datos reales de la API
-  useEffect(() => {
-    const obtenerUsuario = async () => {
-      if (!cedula) {
-        setError("No se proporcionó cédula");
-        setCargando(false);
+      if (!resultado.success) {
+        setMessageLevelsError(resultado.message);
         return;
       }
 
-      try {
-        setCargando(true);
-        setError(null);
-        
-        console.log('Buscando usuario para editar con cédula:', cedula);
-        
-        const response = await fetch(`http://localhost:6500/api/student`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            studentCedula: parseInt(cedula)
-          })
-        });
-
-        const resultado = await response.json();
-        console.log('Respuesta de la API para editar:', resultado);
-
-        if (!response.ok || !resultado.success) {
-          throw new Error(resultado.message || 'Error al obtener usuario');
-        }
-
-        if (resultado.data && resultado.data.length > 0) {
-          const datosEstudiante = resultado.data[0];
-          console.log('Datos completos del estudiante:', datosEstudiante);
-          
-          // GUARDAR EL ID DEL ESTUDIANTE - ESTO ES CLAVE
-          if (datosEstudiante.id_student) {
-            setStudentId(datosEstudiante.id_student);
-          } else {
-            console.warn('No se encontró id_student en los datos');
-          }
-          
-          const tieneRepresentante = datosEstudiante.guardian_cedula && 
-                                   datosEstudiante.guardian_first_name;
-          
-          let datosRepresentanteCompletos = null;
-          
-          if (tieneRepresentante && datosEstudiante.guardian_cedula) {
-            datosRepresentanteCompletos = await obtenerDatosRepresentante(datosEstudiante.guardian_cedula);
-          }
-
-          const usuarioTransformado = {
-            tipo: 'estudiante',
-            primerNombre: datosEstudiante.student_first_name || '',
-            segundoNombre: datosEstudiante.student_second_name || '',
-            primerApellido: datosEstudiante.student_first_lastname || '',
-            segundoApellido: datosEstudiante.student_second_lastname || '',
-            cedula: datosEstudiante.student_cedula?.toString() || cedula,
-            fechaNacimiento: datosEstudiante.student_birthdate ? 
-              new Date(datosEstudiante.student_birthdate).toISOString().split('T')[0] : '',
-            correo: datosEstudiante.student_email || '',
-            telefono: datosEstudiante.student_telephone || '',
-            emergencia: datosEstudiante.student_emergency_telephone || '',
-            direccion: datosEstudiante.student_home_address || '',
-            sexo: datosEstudiante.student_sex === 'M' ? 'Masculino' : 
-                  datosEstudiante.student_sex === 'F' ? 'Femenino' : '',
-            nivel: obtenerNombreNivel(datosEstudiante.level_name),
-            nivelOriginal: datosEstudiante.level_name,
-            profesor: datosEstudiante.teacher_first_name && datosEstudiante.teacher_first_lastname 
-              ? `${datosEstudiante.teacher_first_name} ${datosEstudiante.teacher_first_lastname}`
-              : '',
-            profesorId: datosEstudiante.student_cedula_teacher_id || '',
-            sede: datosEstudiante.branch || '',
-            sedeId: datosEstudiante.student_branch_id || '',
-            tieneRepresentante: !!tieneRepresentante,
-            representante: tieneRepresentante ? {
-              primerNombre: datosRepresentanteCompletos?.guardian_first_name || datosEstudiante.guardian_first_name || '',
-              segundoNombre: datosRepresentanteCompletos?.guardian_second_name || datosEstudiante.guardian_second_name || '',
-              primerApellido: datosRepresentanteCompletos?.guardian_first_lastname || datosEstudiante.guardian_first_lastname || '',
-              segundoApellido: datosRepresentanteCompletos?.guardian_second_lastname || datosEstudiante.guardian_second_lastname || '',
-              cedula: datosEstudiante.guardian_cedula?.toString() || '',
-              telefono: datosRepresentanteCompletos?.guardian_telephone || datosEstudiante.guardian_telephone || '',
-              trabajo: datosRepresentanteCompletos?.guardian_work_phone || datosEstudiante.guardian_work_phone || '',
-              correo: datosRepresentanteCompletos?.guardian_email || datosEstudiante.guardian_email || '',
-              direccionTrabajo: datosRepresentanteCompletos?.guardian_work_address || datosEstudiante.guardian_work_address || '',
-            } : null
-          };
-          
-          console.log('Usuario transformado para editar:', usuarioTransformado);
-          setUsuario(usuarioTransformado);
-        } else {
-          setError("No se encontró el usuario en la base de datos");
-        }
-      } catch (err) {
-        console.error('Error al obtener usuario para editar:', err);
-        setError(err.message || 'Error al cargar los datos del usuario');
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    obtenerUsuario();
-    obtenerProfesores();
-    obtenerSucursales();
-  }, [cedula]);
-
-  const calcularEdad = (fechaNacimiento) => {
-    if (!fechaNacimiento) return '';
-    const nacimiento = new Date(fechaNacimiento);
-    const hoy = new Date();
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
+      setNiveles(resultado.data);
+    } catch (err) {
+      console.error('Error al cargar niveles:', err);
     }
-    
-    return `${edad} años`;
   };
 
-  const edad = usuario?.fechaNacimiento ? calcularEdad(usuario.fechaNacimiento) : '';
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUsuario((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleRepChange = (e) => {
-    const { name, value } = e.target;
-    setUsuario((prev) => ({
-      ...prev,
-      representante: { ...prev.representante, [name]: value },
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log('Datos a actualizar:', usuario);
-    
-    // VERIFICAR QUE TENEMOS EL ID DEL ESTUDIANTE
-    if (!studentId) {
-      alert('❌ Error: No se pudo identificar el ID del estudiante');
-      return;
-    }
-
+  const obtenerEstudiantes = async (esudiante) => {
     try {
-      // USAR EL ID DEL ESTUDIANTE EN LUGAR DE LA CÉDULA
-      const response = await fetch(`http://localhost:6500/api/student/${studentId}`, {
-        method: 'PUT',
+      const response = await fetch('http://localhost:6500/api/student', {
+        method: "POST",
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          student_first_name: usuario.primerNombre,
-          student_second_name: usuario.segundoNombre,
-          student_first_lastname: usuario.primerApellido,
-          student_second_lastname: usuario.segundoApellido,
-          student_email: usuario.correo,
-          student_telephone: usuario.telefono,
-          student_emergency_telephone: usuario.emergencia,
-          student_home_address: usuario.direccion,
-          student_sex: usuario.sexo === 'Masculino' ? 'M' : 'F',
-          student_birthdate: usuario.fechaNacimiento,
-          // Asegúrate de que estos campos sean los correctos para tu API
-          student_level_id: usuario.nivel === 'Elemental' ? 1 : 
-                           usuario.nivel === 'Básico' ? 2 :
-                           usuario.nivel === 'Intermedio' ? 3 :
-                           usuario.nivel === 'Avanzado' ? 4 : 5,
-        })
+        body: JSON.stringify({"studentCedula": esudiante}),
       });
 
-      console.log('Response status:', response.status);
-      
-      // Verificar si la respuesta es HTML en lugar de JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const textResponse = await response.text();
-        console.log('Respuesta no JSON:', textResponse);
-        throw new Error('El servidor devolvió una respuesta no JSON. Posible error 404.');
+      const res = await response.json();
+
+      if (!res.success) {
+        setMessageStudentError(res.message);
+        return ;
       }
 
-      const resultado = await response.json();
-      console.log('Resultado de la actualización:', resultado);
-      
-      if (response.ok && resultado.success) {
-        alert('✅ Usuario actualizado correctamente');
-        onNavigate('detalle-usuario');
-      } else {
-        throw new Error(resultado.message || 'Error al actualizar usuario');
-      }
-    } catch (err) {
-      console.error('Error al actualizar usuario:', err);
-      alert('❌ Error al actualizar usuario: ' + err.message);
+      setEstudiantes(res.data[0])
+    } catch (error) {
+      return console.log('Ha ocurrido un error inesperado', error);
     }
-  };
-
-  if (cargando) {
-    return (
-      <div className="p-6 bg-white min-h-screen">
-        <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-950 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando datos del usuario...</p>
-        </div>
-      </div>
-    );
   }
 
-  if (error) {
-    return (
-      <div className="p-6 bg-white min-h-screen">
-        <div className="text-center py-16">
-          <div className="text-red-500 text-6xl mb-4">❌</div>
-          <p className="text-gray-500 text-lg font-medium mb-2">Error</p>
-          <p className="text-gray-400 text-sm">{error}</p>
-          <button 
-            onClick={() => onNavigate('detalle-usuario')}
-            className="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-full font-medium transition-colors"
-          >
-            Volver
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    obtenerEstudiantes(cedula);
+    obtenerProfesores();
+    obtenerSucursales();
+    obtenerNiveles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  if (!usuario) {
-    return (
-      <div className="p-6 bg-white min-h-screen">
-        <div className="text-center py-16">
-          <div className="text-gray-400 text-6xl mb-4">📭</div>
-          <p className="text-gray-500 text-lg font-medium mb-2">No se encontró el usuario</p>
-          <button 
-            onClick={() => onNavigate('detalle-usuario')}
-            className="mt-4 bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-full font-medium transition-colors"
-          >
-            Volver
-          </button>
-        </div>
-      </div>
-    );
+  useEffect(() => {
+
+    if (estudiantes.id_student) {
+      setId_student(estudiantes.id_student)
+    }
+
+    if (estudiantes.student_cedula) {
+      setStudent_cedula(estudiantes.student_cedula);
+    }
+
+    if (estudiantes.student_first_name) {
+      setStudent_first_name(estudiantes.student_first_name);
+    }
+
+    if (estudiantes.student_second_name) {
+      setStudent_second_name(estudiantes.student_second_name);
+    }
+
+    if (estudiantes.student_first_lastname) {
+      setStudent_first_lastname(estudiantes.student_first_lastname);
+    }
+
+    if (estudiantes.student_second_lastname) {
+      setStudent_second_lastname(estudiantes.student_second_lastname);
+    }
+
+    if (estudiantes.student_email) {
+      setStudent_email(estudiantes.student_email);
+    }
+
+    if (estudiantes.student_telephone) {
+      setStudent_telephone(estudiantes.student_telephone);
+    }
+
+    if (estudiantes.student_emergency_telephone) {
+      setStudent_emergency_telephone(estudiantes.student_emergency_telephone);
+    }
+
+    if (estudiantes.student_sex) {
+      setStudent_sex(estudiantes.student_sex);
+    }
+
+    if (estudiantes.student_birthdate) {
+      setStudent_birthdate(estudiantes.student_birthdate);
+    }
+
+    if (estudiantes.student_home_address) {
+      setStudent_home_address(estudiantes.student_home_address);
+    }
+
+    if (estudiantes.student_cedula_guardians_id) {
+      setStudent_cedula_guardians_id(estudiantes.student_cedula_guardians_id);
+    }
+
+    if (estudiantes.student_level_id) {
+      setStudent_level_id(estudiantes.student_level_id);
+    }
+
+    if (estudiantes.student_branch_id) {
+      setStudent_branch_id(estudiantes.student_branch_id);
+    }
+
+    if (estudiantes.student_cedula_teacher_id) {
+      setStudent_cedula_teacher_id(estudiantes.student_cedula_teacher_id);
+    }
+
+  }, [estudiantes])
+
+
+
+  async function sentInformation (e) {
+    e.preventDefault();
+    setMessageErroUpdate('');
+    setMessageSuccesUpdate('');
+
+    let data = {}
+
+    data.id_student = Number(id_student);
+    data.student_cedula = Number(student_cedula);
+    data.student_first_name = student_first_name;
+    data.student_second_name = student_second_name;
+    data.student_first_lastname = student_first_lastname;
+    data.student_second_lastname = student_second_lastname;
+    data.student_email = student_email;
+    data.student_telephone = student_telephone;
+    data.student_emergency_telephone = student_emergency_telephone;
+    data.student_sex = student_sex;
+    data.student_birthdate = student_birthdate?.split("T")[0];
+    data.student_home_address = student_home_address;
+    data.student_cedula_guardians_id = student_cedula_guardians_id ? Number(student_cedula_guardians_id): null;
+    data.student_level_id = Number(student_level_id);
+    data.student_branch_id = Number(student_branch_id);
+    data.student_cedula_teacher_id = Number(student_cedula_teacher_id);
+
+    const response = await fetch(`http://localhost:6500/api/students/${data.id_student}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const res = await response.json();
+
+    if (!res.success) {
+      setMessageErroUpdate(res.message);
+      return;
+    }
+
+    setMessageSuccesUpdate(res.message);
   }
 
   return (
     <div className="p-6 bg-white min-h-screen">
-      
+
       <h1 className="text-2xl font-bold text-indigo-950 mb-2">Editar Usuario</h1>
 
       {/* 🖼️ Foto del usuario con botón de editar */}
@@ -339,54 +257,50 @@ function EditarUsuario({ cedula, onNavigate }) {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={sentInformation}>
         {/* 📋 Datos del Estudiante */}
         <div className="bg-indigo-950 px-5 py-2 rounded-t-lg flex items-center justify-between">
           <h3 className="text-xl font-semibold text-white">Datos del Estudiante</h3>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-          
+
           {/* Fila 1: Nombres */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Primer Nombre</label>
-              <input 
-                type="text" 
-                name="primerNombre" 
-                value={usuario.primerNombre} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_first_name(e.target.value)}
+                  defaultValue={estudiantes.student_first_name}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Segundo Nombre</label>
-              <input 
-                type="text" 
-                name="segundoNombre" 
-                value={usuario.segundoNombre} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_second_name(e.target.value)}
+                  defaultValue={estudiantes.student_second_name}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Primer Apellido</label>
-              <input 
-                type="text" 
-                name="primerApellido" 
-                value={usuario.primerApellido} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_first_lastname(e.target.value)}
+                  defaultValue={estudiantes.student_first_lastname}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Segundo Apellido</label>
-              <input 
-                type="text" 
-                name="segundoApellido" 
-                value={usuario.segundoApellido} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_second_lastname(e.target.value)}
+                  defaultValue={estudiantes.student_second_lastname}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
           </div>
 
@@ -394,45 +308,40 @@ function EditarUsuario({ cedula, onNavigate }) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Cédula de Identidad</label>
-              <input 
-                type="text" 
-                name="cedula" 
-                value={usuario.cedula} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                disabled
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_cedula(e.target.value)}
+                  defaultValue={estudiantes.student_cedula}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha de Nacimiento</label>
-              <input 
-                type="date" 
-                name="fechaNacimiento" 
-                value={usuario.fechaNacimiento} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_birthdate(e.target.value)}
+                  defaultValue={estudiantes.student_birthdate?.split("T")[0]}
+                  type="date"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Edad</label>
-              <input 
-                type="text" 
-                value={edad} 
-                disabled 
-                className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-              />
+                <input
+                  defaultValue={estudiantes.student_second_name}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Sexo</label>
-              <select 
-                name="sexo" 
-                value={usuario.sexo} 
-                onChange={handleChange}
+              <select
+                required
+                onChange={(e) => setStudent_sex(e.target.value)}
+                defaultValue={`${estudiantes.student_sex === "M" ? "F" : "M"}`}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="">Seleccionar</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
+                <option>Seleccionar</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
               </select>
             </div>
           </div>
@@ -441,244 +350,123 @@ function EditarUsuario({ cedula, onNavigate }) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Correo Electrónico</label>
-              <input 
-                type="email" 
-                name="correo" 
-                value={usuario.correo} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_email(e.target.value)}
+                  defaultValue={estudiantes.student_email}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Teléfono Celular</label>
-              <input 
-                type="text" 
-                name="telefono" 
-                value={usuario.telefono} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_telephone(e.target.value)}
+                  defaultValue={estudiantes.student_telephone}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Teléfono de Emergencia</label>
-              <input 
-                type="text" 
-                name="emergencia" 
-                value={usuario.emergencia} 
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  required
+                  onChange={(e) => setStudent_emergency_telephone(e.target.value)}
+                  defaultValue={estudiantes.student_emergency_telephone}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Cédula del Representante</label>
-              <input 
-                type="text" 
-                name="cedula" 
-                value={usuario.representante?.cedula || ''} 
-                onChange={handleRepChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                disabled={!usuario.tieneRepresentante}
-              />
+                <input
+                  onChange={(e) => setStudent_cedula_guardians_id(e.target.value)}
+                  defaultValue={estudiantes.guardian_cedula}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
             </div>
           </div>
 
           {/* Fila 4: Dirección */}
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-1">Dirección</label>
-            <input 
-              type="text" 
-              name="direccion" 
-              value={usuario.direccion} 
-              onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
+                <input
+                  required
+                  onChange={(e) => setStudent_home_address(e.target.value)}
+                  defaultValue={estudiantes.student_home_address}
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
           </div>
         </div>
 
-        
-        {/* 👨‍👩‍👧 Datos del Representante - Solo si tiene representante */}
-        {usuario.tieneRepresentante && usuario.representante && (
-          <>
-            <div className="bg-indigo-950 px-5 py-2 rounded-t-lg flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-white">Datos del Representante</h3>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-              
-              {/* Fila 1: Nombres del representante */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Primer Nombre</label>
-                  <input 
-                    type="text" 
-                    name="primerNombre" 
-                    value={usuario.representante.primerNombre} 
-                    onChange={handleRepChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Segundo Nombre</label>
-                  <input 
-                    type="text" 
-                    name="segundoNombre" 
-                    value={usuario.representante.segundoNombre} 
-                    onChange={handleRepChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Primer Apellido</label>
-                  <input 
-                    type="text" 
-                    name="primerApellido" 
-                    value={usuario.representante.primerApellido} 
-                    onChange={handleRepChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Segundo Apellido</label>
-                  <input 
-                    type="text" 
-                    name="segundoApellido" 
-                    value={usuario.representante.segundoApellido} 
-                    onChange={handleRepChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-              </div>
 
-              {/* Fila 2: Datos del representante */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Cédula de Identidad</label>
-                  <input 
-                    type="text" 
-                    name="cedula" 
-                    value={usuario.representante.cedula} 
-                    onChange={handleRepChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    disabled
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Teléfono</label>
-                  <input 
-                    type="text" 
-                    name="telefono" 
-                    value={usuario.representante.telefono} 
-                    onChange={handleRepChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Teléfono de Trabajo</label>
-                  <input 
-                    type="text" 
-                    name="trabajo" 
-                    value={usuario.representante.trabajo} 
-                    onChange={handleRepChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Correo</label>
-                  <input 
-                    type="email" 
-                    name="correo" 
-                    value={usuario.representante.correo} 
-                    onChange={handleRepChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              {/* Fila 3: Dirección del representante */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Dirección de Trabajo</label>
-                <input 
-                  type="text" 
-                  name="direccionTrabajo" 
-                  value={usuario.representante.direccionTrabajo} 
-                  onChange={handleRepChange}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* 🎓 Nivel de Formación */}
+        {/* 🎓 Nivel de Formación - CON NIVELES DESDE LA API */}
         <div className="bg-indigo-950 px-5 py-2 rounded-t-lg flex items-center justify-between">
           <h3 className="text-xl font-semibold text-white">Datos de Formación</h3>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Nivel a cursar</label>
-              <select 
-                name="nivel" 
-                value={usuario.nivel} 
-                onChange={handleChange}
+              <select
+                required
+                onChange={(e) => setStudent_level_id(e.target.value)}
+                defaultValue={estudiantes.level_name}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="">Seleccionar nivel</option>
-                <option value="Elemental">Elemental</option>
-                <option value="Básico">Básico</option>
-                <option value="Intermedio">Intermedio</option>
-                <option value="Avanzado">Avanzado</option>
-                <option value="Perfeccionamiento">Perfeccionamiento</option>
+                {niveles.map((nivel) => (
+                  <option value={nivel.id_level} key={nivel.id_level}>
+                    {nivel.level_name}
+                  </option>
+                ))}
               </select>
+
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Asignación de Profesor</label>
-              <select 
-                name="profesor" 
-                value={usuario.profesor} 
-                onChange={handleChange}
+              <select
+                required
+                onChange={(e) => setStudent_cedula_teacher_id(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="">Seleccionar profesor</option>
+                <option>Seleccione</option>
                 {profesores.map((profesor) => (
-                  <option 
-                    key={profesor.teacher_cedula} 
-                    value={`${profesor.teacher_first_name} ${profesor.teacher_first_lastname}`}
-                  >
-                    {profesor.teacher_first_name} {profesor.teacher_first_lastname}
+                  <option value={profesor.teacher_cedula} key={profesor.id_teacher}>
+                    {profesor.teacher_first_name} - {profesor.teacher_cedula}
                   </option>
-                ))}
+                ))
+                }
               </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Sucursal</label>
-              <select 
-                name="sede" 
-                value={usuario.sede} 
-                onChange={handleChange}
+              <select
+                required
+                onChange={(e) => setStudent_branch_id(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="">Seleccionar sucursal</option>
+                <option value="">Seleccionar</option>
                 {sucursales.map((sucursal) => (
-                  <option key={sucursal.id_branch} value={sucursal.branch_name}>
-                    {sucursal.branch_name}
-                  </option>
+                  <option value={sucursal.id_branch} key={sucursal.id_branch}>{sucursal.branch}</option>
                 ))}
+
               </select>
             </div>
+            {
+              messageErroUpdate ? <span className="w-full grid md:col-span-3 justify-center text-sm font-medium text-red-600">{messageErroUpdate}</span> : <span className="w-full grid md:col-span-3 justify-center text-sm font-medium text-green-600">{messageSuccesUpdate}</span>
+            }
           </div>
         </div>
 
         {/* 📤 Botones de acción - Centrados */}
         <div className="flex justify-center gap-4 mt-8">
-          <button 
+          <button
             type="button"
-            onClick={() => onNavigate('detalle-usuario')}
             className="bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-full font-medium transition-colors"
           >
             Atrás
           </button>
-          <button 
+          <button
             type="submit"
             className="bg-indigo-700 hover:bg-indigo-800 text-white px-8 py-3 rounded-full font-medium transition-colors"
           >

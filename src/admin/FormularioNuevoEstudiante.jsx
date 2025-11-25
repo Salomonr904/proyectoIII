@@ -20,19 +20,6 @@ function FormularioNuevoEstudiante({ onContinuar }) {
     sucursal: ''
   });
 
-  // Nuevo estado para datos del representante
-  const [datosRepresentante, setDatosRepresentante] = useState({
-    guardian_cedula: '',
-    guardian_first_name: '',
-    guardian_second_name: '',
-    guardian_first_lastname: '',
-    guardian_second_lastname: '',
-    guardian_email: '',
-    guardian_telephone: '',
-    guardian_work_telephone: '',
-    guardian_work_address: ''
-  });
-
   const [cargando, setCargando] = useState(false);
   const [cargandoListas, setCargandoListas] = useState(true);
   const [errores, setErrores] = useState({});
@@ -47,7 +34,6 @@ function FormularioNuevoEstudiante({ onContinuar }) {
   // URLs de la API
   const API_BASE_URL = 'http://localhost:6500/api';
   const STUDENTS_ENDPOINT = `${API_BASE_URL}/students`;
-  const GUARDIANS_ENDPOINT = `${API_BASE_URL}/guardians`;
   const TEACHERS_ENDPOINT = `${API_BASE_URL}/teachers`;
   const BRANCHES_ENDPOINT = `${API_BASE_URL}/branches`;
   const LEVELS_ENDPOINT = `${API_BASE_URL}/level`;
@@ -122,7 +108,7 @@ function FormularioNuevoEstudiante({ onContinuar }) {
   }, []);
 
   // Efecto para mostrar/ocultar formulario de representante
-  useEffect(() => {
+  /*useEffect(() => {
     if (necesitaRepresentante) {
       setMostrarRepresentante(true);
       // Prellenar la cédula del representante con la del estudiante si está vacía
@@ -135,7 +121,7 @@ function FormularioNuevoEstudiante({ onContinuar }) {
     } else {
       setMostrarRepresentante(false);
     }
-  }, [necesitaRepresentante, datos.cedula]);
+  }, [necesitaRepresentante, datos.cedula]);*/
 
   const esMenor = parseInt(datos.edad) <= 18;
 
@@ -156,16 +142,6 @@ function FormularioNuevoEstudiante({ onContinuar }) {
     // Limpiar error del campo cuando el usuario empiece a escribir
     if (errores[name]) {
       setErrores(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleChangeRepresentante = (e) => {
-    const { name, value } = e.target;
-    setDatosRepresentante(prev => ({ ...prev, [name]: value }));
-    
-    // Limpiar error del campo cuando el usuario empiece a escribir
-    if (erroresRepresentante[name]) {
-      setErroresRepresentante(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -216,8 +192,8 @@ function FormularioNuevoEstudiante({ onContinuar }) {
       nuevosErrores.correo = 'El correo electrónico no es válido';
     }
     
-    if (!datos.telefono.trim()) {
-      nuevosErrores.telefono = 'El teléfono es requerido';
+    if (!datos.telefono.trim() || datos.telefono.length <= 10) {
+      nuevosErrores.telefono = 'El teléfono es requerido o no es valido';
     }
     
     if (!datos.fechaNacimiento.trim()) {
@@ -244,42 +220,6 @@ function FormularioNuevoEstudiante({ onContinuar }) {
     return Object.keys(nuevosErrores).length === 0;
   };
 
-  // Validación del formulario del representante
-  const validarFormularioRepresentante = () => {
-    const nuevosErrores = {};
-    const soloLetrasRegex = /^[a-zA-ZáéíóúñüÁÉÍÓÚÑÜ\s]+$/;
-    
-    if (!datosRepresentante.guardian_cedula.trim()) {
-      nuevosErrores.guardian_cedula = 'La cédula del representante es requerida';
-    } else if (!/^\d+$/.test(datosRepresentante.guardian_cedula)) {
-      nuevosErrores.guardian_cedula = 'La cédula debe contener solo números';
-    }
-    
-    if (!datosRepresentante.guardian_first_name.trim()) {
-      nuevosErrores.guardian_first_name = 'El primer nombre es requerido';
-    } else if (!soloLetrasRegex.test(datosRepresentante.guardian_first_name)) {
-      nuevosErrores.guardian_first_name = 'El primer nombre solo puede contener letras';
-    }
-    
-    if (!datosRepresentante.guardian_first_lastname.trim()) {
-      nuevosErrores.guardian_first_lastname = 'El apellido es requerido';
-    } else if (!soloLetrasRegex.test(datosRepresentante.guardian_first_lastname)) {
-      nuevosErrores.guardian_first_lastname = 'El apellido solo puede contener letras';
-    }
-    
-    if (!datosRepresentante.guardian_email.trim()) {
-      nuevosErrores.guardian_email = 'El correo electrónico es requerido';
-    } else if (!/\S+@\S+\.\S+/.test(datosRepresentante.guardian_email)) {
-      nuevosErrores.guardian_email = 'El correo electrónico no es válido';
-    }
-    
-    if (!datosRepresentante.guardian_telephone.trim()) {
-      nuevosErrores.guardian_telephone = 'El teléfono es requerido';
-    }
-    
-    setErroresRepresentante(nuevosErrores);
-    return Object.keys(nuevosErrores).length === 0;
-  };
 
   // Función para mostrar mensajes
   const displayMessage = (message, type = 'error') => {
@@ -320,58 +260,9 @@ function FormularioNuevoEstudiante({ onContinuar }) {
       profesor: '',
       sucursal: ''
     });
-    setDatosRepresentante({
-      guardian_cedula: '',
-      guardian_first_name: '',
-      guardian_second_name: '',
-      guardian_first_lastname: '',
-      guardian_second_lastname: '',
-      guardian_email: '',
-      guardian_telephone: '',
-      guardian_work_telephone: '',
-      guardian_work_address: ''
-    });
     setErrores({});
     setErroresRepresentante({});
     setMostrarRepresentante(false);
-  };
-
-  // Función para crear el representante
-  const crearRepresentante = async () => {
-    const payloadRepresentante = {
-      guardian_cedula: parseInt(datosRepresentante.guardian_cedula),
-      guardian_first_name: normalizarTexto(datosRepresentante.guardian_first_name),
-      guardian_second_name: datosRepresentante.guardian_second_name ? normalizarTexto(datosRepresentante.guardian_second_name) : null,
-      guardian_first_lastname: normalizarTexto(datosRepresentante.guardian_first_lastname),
-      guardian_second_lastname: datosRepresentante.guardian_second_lastname ? normalizarTexto(datosRepresentante.guardian_second_lastname) : null,
-      guardian_email: datosRepresentante.guardian_email.trim(),
-      guardian_telephone: datosRepresentante.guardian_telephone.trim(),
-      guardian_work_telephone: datosRepresentante.guardian_work_telephone.trim() || null,
-      guardian_work_address: datosRepresentante.guardian_work_address.trim() || null
-    };
-
-    console.log('📤 Enviando POST guardians:', JSON.stringify(payloadRepresentante, null, 2));
-
-    const res = await fetch(GUARDIANS_ENDPOINT, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payloadRepresentante),
-    });
-
-    const result = await res.json();
-    console.log('📥 Respuesta POST guardians:', result);
-
-    if (!res.ok) {
-      throw new Error(result.message || 'Error al crear el representante');
-    }
-
-    if (!result.success) {
-      throw new Error(result.message || 'Error en la creación del representante');
-    }
-
-    return parseInt(datosRepresentante.guardian_cedula);
   };
 
   const handleSubmit = async (e) => {
@@ -382,20 +273,10 @@ function FormularioNuevoEstudiante({ onContinuar }) {
       return;
     }
 
-    if (necesitaRepresentante && !validarFormularioRepresentante()) {
-      displayMessage('Por favor, complete todos los campos requeridos del representante correctamente.');
-      return;
-    }
-
     setCargando(true);
 
     try {
-      let cedulaRepresentanteId = null;
-
-      // Si necesita representante, crearlo primero
-      if (necesitaRepresentante) {
-        cedulaRepresentanteId = await crearRepresentante();
-      }
+      let cedulaRepresentanteId = datos.cedulaRepresentante ? Number(datos.cedulaRepresentante) : null;
 
       // Obtener los objetos completos para verificar
       const profesorSeleccionado = profesores.find(p => p.cedula === datos.profesor);
@@ -406,7 +287,7 @@ function FormularioNuevoEstudiante({ onContinuar }) {
         profesor: profesorSeleccionado,
         sucursal: sucursalSeleccionada,
         nivel: nivelSeleccionado,
-        cedulaRepresentanteId
+        cedulaRepresentanteId,
       });
 
       // Preparar el payload del estudiante
@@ -747,168 +628,6 @@ function FormularioNuevoEstudiante({ onContinuar }) {
             </div>
           </div>
 
-          {/* Sección: Datos del Representante (solo si es menor de 9 años) */}
-          {mostrarRepresentante && (
-            <div className="mt-8 border border-gray-300 rounded-lg shadow-sm">
-              <div className="bg-orange-600 px-5 py-2 rounded-t-lg flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-white">Datos del Representante</h3>
-                <span className="text-white text-sm bg-orange-700 px-2 py-1 rounded">Requerido</span>
-              </div>
-              
-              <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Cédula del Representante *
-                  </label>
-                  <input 
-                    className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600 ${
-                      erroresRepresentante.guardian_cedula ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    name="guardian_cedula"
-                    placeholder="Cédula del Representante"
-                    value={datosRepresentante.guardian_cedula}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                  {erroresRepresentante.guardian_cedula && (
-                    <p className="text-red-500 text-xs mt-1">{erroresRepresentante.guardian_cedula}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Primer Nombre *
-                  </label>
-                  <input 
-                    className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600 ${
-                      erroresRepresentante.guardian_first_name ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    name="guardian_first_name"
-                    placeholder="Primer Nombre"
-                    value={datosRepresentante.guardian_first_name}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                  {erroresRepresentante.guardian_first_name && (
-                    <p className="text-red-500 text-xs mt-1">{erroresRepresentante.guardian_first_name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Segundo Nombre
-                  </label>
-                  <input 
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600"
-                    name="guardian_second_name"
-                    placeholder="Segundo Nombre (opcional)"
-                    value={datosRepresentante.guardian_second_name}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Primer Apellido *
-                  </label>
-                  <input 
-                    className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600 ${
-                      erroresRepresentante.guardian_first_lastname ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    name="guardian_first_lastname"
-                    placeholder="Primer Apellido"
-                    value={datosRepresentante.guardian_first_lastname}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                  {erroresRepresentante.guardian_first_lastname && (
-                    <p className="text-red-500 text-xs mt-1">{erroresRepresentante.guardian_first_lastname}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Segundo Apellido
-                  </label>
-                  <input 
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600"
-                    name="guardian_second_lastname"
-                    placeholder="Segundo Apellido (opcional)"
-                    value={datosRepresentante.guardian_second_lastname}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Correo Electrónico *
-                  </label>
-                  <input 
-                    className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600 ${
-                      erroresRepresentante.guardian_email ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    name="guardian_email"
-                    placeholder="Correo Electrónico"
-                    value={datosRepresentante.guardian_email}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                  {erroresRepresentante.guardian_email && (
-                    <p className="text-red-500 text-xs mt-1">{erroresRepresentante.guardian_email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Teléfono *
-                  </label>
-                  <input 
-                    className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600 ${
-                      erroresRepresentante.guardian_telephone ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    name="guardian_telephone"
-                    placeholder="Teléfono"
-                    value={datosRepresentante.guardian_telephone}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                  {erroresRepresentante.guardian_telephone && (
-                    <p className="text-red-500 text-xs mt-1">{erroresRepresentante.guardian_telephone}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Teléfono de Trabajo
-                  </label>
-                  <input 
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600"
-                    name="guardian_work_telephone"
-                    placeholder="Teléfono de Trabajo (opcional)"
-                    value={datosRepresentante.guardian_work_telephone}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                </div>
-
-                <div className="md:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Dirección de Trabajo
-                  </label>
-                  <input 
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-600"
-                    name="guardian_work_address"
-                    placeholder="Dirección de Trabajo (opcional)"
-                    value={datosRepresentante.guardian_work_address}
-                    onChange={handleChangeRepresentante}
-                    disabled={cargando}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Sección: Programar */}
           <div className="mt-8 border border-gray-300 rounded-lg shadow-sm">

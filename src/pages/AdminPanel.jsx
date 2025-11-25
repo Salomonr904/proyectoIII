@@ -19,6 +19,7 @@ import GestionUsuarios from '../admin/GestionUsuarios';
 import GestionCuotas from '../admin/GestionCuotas';
 import RestablecerContrasena from '../admin/RestablecerContrasena';
 import RegistrarCuota from '../admin/RegistrarCuota';
+import {NuevoRepresentante} from '../admin/FormularioNuevoRerpresentante.jsx';
 
 const AdminPanel = () => {
   const [vista, setVista] = useState(null);
@@ -34,6 +35,8 @@ const AdminPanel = () => {
     switch (vista) {
       case 'estudiante':
         return <FormularioNuevoEstudiante onContinuar={handleContinuar} />;
+      case 'representante':
+        return <NuevoRepresentante onContinuar={handleContinuar} />;
       case 'profesor':
         return <FormularioNuevoProfesor onContinuar={handleContinuar} />;
       case 'registro-usuario':

@@ -110,6 +110,12 @@ function PanelDeControl({ onNavigate }) {
                 >
                   Empleado
                 </button>
+                <button
+                  onClick={() => seleccionarOpcion('representante')}
+                  className="w-full text-left p-2 rounded transition-colors hover:border-b-2 hover:border-gray-400"
+                >
+                  Representante
+                </button>
               </div>
             )}
           </div>

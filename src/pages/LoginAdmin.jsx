@@ -1,6 +1,5 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
-import {useState} from "react";
 
 const LoginAdmin = () => {
     const navigate = useNavigate();
@@ -35,9 +34,23 @@ const LoginAdmin = () => {
 
         if (!response.success) {
             setMessage(response.message);
-            console.log(message);
-            //alert(response.message);
             return;
+        }
+
+      console.log(response);
+
+        if (response.data.role !== "teacher") {
+          setMessage('Usuario no autorizado.');
+          async function logout () {
+            const exit = await fetch("http://localhost:6500/api/logout", {
+              method: "DELETE",
+              credentials: 'include',
+              mode: 'cors',
+            })
+
+            await exit;
+          }
+          return;
         }
 
         localStorage.setItem("accessToken", response.accessToken);

@@ -6,6 +6,7 @@ import LoginCalificaciones from './pages/LoginCalificaciones';
 import LoadingScreen from './components/LoadingScreen';
 import AdminPanel from './pages/AdminPanel';
 import EstudiantePanel from './pages/EstudiantePanel';
+import ProtectedAdmin from "./components/proteccionAdmin.jsx";
 
 function App() {
   return (
@@ -14,8 +15,25 @@ function App() {
       <Route path="/login-admin" element={<LoginAdmin />} />
       <Route path="/login-practicas" element={<LoginPracticas />} />
       <Route path="/login-calificaciones" element={<LoginCalificaciones />} />
-      <Route path="/admin-panel" element={<AdminPanel />} />
-      <Route path="/estudiante-panel" element={<EstudiantePanel />} />
+
+
+      <Route
+        path="/admin-panel"
+        element={
+          <ProtectedAdmin>
+            <AdminPanel />
+          </ProtectedAdmin>
+        }
+      />
+
+      {/*<Route
+        path="/estudiante-panel"
+        element={
+          <ProtectedRoute>
+            <EstudiantePanel/>
+          </ProtectedRoute>
+        }
+      />*/}
 
 
       {/* Pantallas de carga */}
